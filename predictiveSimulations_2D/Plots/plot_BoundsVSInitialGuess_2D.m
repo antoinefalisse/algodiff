@@ -14,7 +14,13 @@ for i = 1:size(bounds.QsQdots.lower,2)
         'r--','linewidth',2);
     plot(guess.QsQdots(:,i),'k','linewidth',2);
 end
-s = suptitle('Qs and Qdots');
+versionS = ver('MATLAB'); % sgtitle instead of suptitle from R2018b, version 9.5
+versionD = str2double(versionS.Version);
+if versionD > 9.4
+    s = sgtitle('Qs and Qdots');
+else
+    s = suptitle('Qs and Qdots');
+end
 set(s,'Fontsize',suptitle_Fontsize)
 figure()
 for i = 1:size(bounds.Qdotdots.lower,2)
@@ -26,7 +32,11 @@ for i = 1:size(bounds.Qdotdots.lower,2)
         'r--','linewidth',2);
     plot(guess.Qdotdots(:,i),'k','linewidth',2);
 end
-s = suptitle('Time derivative of Qdots');
+if versionD > 9.4
+    s = sgtitle('Time derivative of Qdots');
+else
+    s = suptitle('Time derivative of Qdots');
+end
 set(s,'Fontsize',suptitle_Fontsize)
 figure()
 for i = 1:NMuscle
@@ -38,7 +48,11 @@ for i = 1:NMuscle
         'r--','linewidth',2);
     plot(guess.a(:,i),'k','linewidth',2);
 end
-s = suptitle('Muscle activations');
+if versionD > 9.4
+    s = sgtitle('Muscle activations');
+else
+    s = suptitle('Muscle activations');
+end
 set(s,'Fontsize',suptitle_Fontsize)
 figure()
 for i = 1:NMuscle
@@ -50,7 +64,11 @@ for i = 1:NMuscle
         'r--','linewidth',2);
     plot(guess.a(:,i),'k','linewidth',2);
 end
-s = suptitle('Time derivative of muscle activations');
+if versionD > 9.4
+    s = sgtitle('Time derivative of muscle activations');
+else
+    s = suptitle('Time derivative of muscle activations');
+end
 set(s,'Fontsize',suptitle_Fontsize)
 figure()
 for i = 1:NMuscle
@@ -62,7 +80,11 @@ for i = 1:NMuscle
         'r--','linewidth',2);
     plot(guess.a(:,i),'k','linewidth',2);
 end
-s = suptitle('Muscle-tendon forces');
+if versionD > 9.4
+    s = sgtitle('Muscle-tendon forces');
+else
+    s = suptitle('Muscle-tendon forces');
+end
 set(s,'Fontsize',suptitle_Fontsize)
 figure()
 for i = 1:NMuscle
@@ -74,7 +96,11 @@ for i = 1:NMuscle
         'r--','linewidth',2);
     plot(guess.a(:,i),'k','linewidth',2);
 end
-s = suptitle('Time derivative of muscle-tendon forces');
+if versionD > 9.4
+    s = sgtitle('Time derivative of muscle-tendon forces');
+else
+    s = suptitle('Time derivative of muscle-tendon forces');
+end
 set(s,'Fontsize',suptitle_Fontsize)
 figure()
 for i = 1:nq.trunk
@@ -85,7 +111,11 @@ for i = 1:nq.trunk
         'r--','linewidth',2);
     plot(guess.a_b(:,i),'k','linewidth',2);
 end
-s = suptitle('Back actuator activations');
+if versionD > 9.4
+    s = sgtitle('Back actuator activations');
+else
+    s = suptitle('Back actuator activations');
+end
 set(s,'Fontsize',suptitle_Fontsize)
 figure()
 for i = 1:nq.trunk
@@ -96,5 +126,9 @@ for i = 1:nq.trunk
         'r--','linewidth',2);
     plot(guess.e_b(:,i),'k','linewidth',2);
 end
-s = suptitle('Back actuator excitations');
+if versionD > 9.4
+    s = sgtitle('Back actuator excitations');
+else
+    s = suptitle('Back actuator excitations');
+end
 set(s,'Fontsize',suptitle_Fontsize)

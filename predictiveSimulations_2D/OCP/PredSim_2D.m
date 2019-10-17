@@ -5,6 +5,10 @@
 %
 % DEPENDENCY: please install CasADi (https://web.casadi.org/)
 %
+% This code was developed using MATLAB R2017b, you might run into some issues
+% with other versions (or if you do not have all MATLAB toolboxes). Please
+% let us know so that we can make the code better.
+%
 clear all;
 clc
 close all;
@@ -24,7 +28,7 @@ close all;
 % num_set(6): set to 1 to write .mot file
 
 num_set = [1,1,0,0,0,1]; % This configuration solves the problem
-% num_set = [0,1,1,0,1,1]; % This configuration analyzes the results
+% num_set = [0,1,1,0,0,1]; % This configuration analyzes the results
 
 % The variable settings in the following section (loaded through
 % settings_PredSim_2D) will set some parameters of the optimal control problems.

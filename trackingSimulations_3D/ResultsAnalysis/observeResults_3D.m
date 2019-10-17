@@ -105,7 +105,13 @@ for i = 1:length(idx_Qs)
 end 
 l = legend(p,legend_case);
 set(l,'Fontsize',label_fontsize)
-sp = suptitle('Joint angles');
+versionS = ver('MATLAB'); % sgtitle instead of suptitle from R2018b, version 9.5
+versionD = str2double(versionS.Version);
+if versionD > 9.4
+    sp = sgtitle('Joint angles');
+else
+    sp = suptitle('Joint angles');
+end
 set(sp,'Fontsize',sup_fontsize);   
 
 %% Plot ground reaction forces
@@ -155,7 +161,11 @@ for i = 1:length(GRF_str)
 end
 l = legend(p,legend_case);
 set(l,'Fontsize',16)
-sp = suptitle('Ground reaction forces');
+if versionD > 9.4
+    sp = sgtitle('Ground reaction forces');
+else
+    sp = suptitle('Ground reaction forces');
+end
 set(sp,'Fontsize',sup_fontsize);
 
 %% Plot ground reaction torques
@@ -199,7 +209,11 @@ for i = 1:length(GRF_str)
 end
 l = legend(p,legend_case);
 set(l,'Fontsize',16)
-sp = suptitle('Ground reaction torques');
+if versionD > 9.4
+    sp = sgtitle('Ground reaction torques');
+else
+    sp = suptitle('Ground reaction torques');
+end
 set(sp,'Fontsize',sup_fontsize);
 
 %% Plot joint torques
@@ -241,7 +255,11 @@ for i = 1:length(idx_Qdots)
 end    
 l = legend(p,legend_case);
 set(l,'Fontsize',16)
-sp = suptitle('Joint torques');
+if versionD > 9.4
+    sp = sgtitle('Joint torques');
+else
+    sp = suptitle('Joint torques');
+end
 set(sp,'Fontsize',sup_fontsize);
 
 %% Plot muscle activations: right
@@ -328,7 +346,11 @@ for i = 1:NMuscle/2
 end
 l = legend(p,legend_case);
 set(l,'Fontsize',label_fontsize)
-sp = suptitle('Muscle activations: right');
+if versionD > 9.4
+    sp = sgtitle('Muscle activations: right');
+else
+    sp = suptitle('Muscle activations: right');
+end
 set(sp,'Fontsize',sup_fontsize);
 
 %% Plot muscle activations: left
@@ -397,7 +419,11 @@ for i = 1:NMuscle/2
 end
 l = legend(p,legend_case);
 set(l,'Fontsize',label_fontsize)
-sp = suptitle('Muscle activations: left');
+if versionD > 9.4
+    sp = sgtitle('Muscle activations: left');
+else
+    sp = suptitle('Muscle activations: left');
+end
 set(sp,'Fontsize',sup_fontsize);
 
 %% Plot parameters
@@ -458,7 +484,11 @@ for k = 1:length(ww_3D)
 end
 l = legend(p,legend_case);
 set(l,'Fontsize',label_fontsize)
-sp = suptitle('Contact model parameters');
+if versionD > 9.4
+    sp = sgtitle('Contact model parameters');
+else
+    sp = suptitle('Contact model parameters');
+end
 set(sp,'Fontsize',sup_fontsize);
 
 %% Plot CPU times / Optimal cost
