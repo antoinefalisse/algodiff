@@ -30,11 +30,13 @@ Brief overview of the framework
 --------------------------------
 
 A detailed description of our framework to solve trajectory optimization problems with OpenSim is provided in Figure 2 of the paper. In brief, our framework enables making an OpenSim function `F` and its derivatives available within the CasADi environment for use by the NLP solver during an optimization. In more detail:
-    * the function `F` is described in a C++ code (e.g., `predictiveSimulations_2D/ExternalFunctions/PredSim_2D.cpp`). 
-    * the Recorder tool is used to provide the expression graph of `F` as MATLAB source code.
-    * the CasADi’s C-code generator tool is used to generate, from the MATLAB code, C-code containing `F` and expressions for its derivatives.
-    * the C-code is compiled as a Dynamic-link Library (DLL) and imported as an external function within the CasADi environment. 
+* the function `F` is described in a C++ code (e.g., `predictiveSimulations_2D/ExternalFunctions/PredSim_2D.cpp`). 
+* the Recorder tool is used to provide the expression graph of `F` as MATLAB source code.
+* the CasADi’s C-code generator tool is used to generate, from the MATLAB code, C-code containing `F` and expressions for its derivatives.
+* the C-code is compiled as a Dynamic-link Library (DLL) and imported as an external function within the CasADi environment. 
 
-In our application, `F` represents the multi-body dynamics and is called when formulating the optimal control problem. The latter is then composed into a differentiable optimal control transcription using CasADi. During the optimization, CasADi provides the NLP solver with evaluations of the NLP objective function, constraints, objective function gradient, constraint Jacobian, and Hessian of the Lagrangian. You can find more information about how to build this pipeline in this repository: https://github.com/antoinefalisse/opensim-core/tree/AD-recorder.
+In our application, `F` represents the multi-body dynamics and is called when formulating the optimal control problem. The latter is then composed into a differentiable optimal control transcription using CasADi. During the optimization, CasADi provides the NLP solver with evaluations of the NLP objective function, constraints, objective function gradient, constraint Jacobian, and Hessian of the Lagrangian. CasADi efficiently queries `F` and its derivatives to construct the full derivative matrices.
+
+You can find more information about how to build this pipeline in this repository: https://github.com/antoinefalisse/opensim-core/tree/AD-recorder.
     
 Thanks for citing our work in any derived publication. Feel free to reach us for any questions: antoine.falisse@kuleuven.be | antoinefalisse@gmail.com | friedl.degroote@kuleuven.be | gil.serrancoli@upc.edu. This code has been developed on Windows using MATLAB2017b. There is no guarantee that it runs smooth on other platforms. Please let us know if you run into troubles.
