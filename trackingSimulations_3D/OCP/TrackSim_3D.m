@@ -28,7 +28,7 @@ close all;
 % num_set(5): set to 1 to visualize guess-bounds 
 % num_set(6): set to 1 to write .mot file
 
-num_set = [1,1,0,0,1,1]; % This configuration solves the problem
+num_set = [1,1,0,0,0,1]; % This configuration solves the problem
 % num_set = [0,1,1,0,0,1]; % This configuration analyzes the results
 
 % The variable settings in the following section (loaded through
