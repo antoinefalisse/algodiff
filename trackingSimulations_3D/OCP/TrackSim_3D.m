@@ -6,6 +6,10 @@
 %
 % DEPENDENCY: please install CasADi (https://web.casadi.org/)
 %
+% This code was developed using MATLAB R2017b, you might run into some issues
+% with other versions (or if you do not have all MATLAB toolboxes). Please
+% let us know so that we can make the code better.
+%
 clear all;
 clc
 close all;
