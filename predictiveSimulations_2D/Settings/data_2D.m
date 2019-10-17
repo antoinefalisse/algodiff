@@ -5,7 +5,7 @@
 %
 %% load results
 pathresults = [pathRepo_2D,'/Results/',setup.ocp];
-load([pathresults,'/Results_2D.mat']);
+load([pathresults,'/Results_2D_Paper.mat']);
 
 %% Extract results following pre-defined structure
 deri        = settings(ww_2D(k),1);	% derivative supplier identifier
