@@ -14,7 +14,7 @@ ww_2D  = [2,8,31,32];
 % Load pre-defined settings
 pathmain = pwd;
 [pathMainRepo,~,~] = fileparts(pathmain);
-pathRepo_2D = [pathMainRepo,'\predictiveSimulations_2D\'];
+pathRepo_2D = [pathMainRepo,'/predictiveSimulations_2D/'];
 pathSettings_2D = [pathRepo_2D,'Settings'];
 addpath(genpath(pathSettings_2D));
 

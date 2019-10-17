@@ -22,13 +22,13 @@ ww_pend = 2:10;
 % Load pre-defined settings
 pathmain = pwd;
 [pathMainRepo,~,~] = fileparts(pathmain);
-pathRepo_2D = [pathMainRepo,'\predictiveSimulations_2D\'];
+pathRepo_2D = [pathMainRepo,'/predictiveSimulations_2D/'];
 pathSettings_2D = [pathRepo_2D,'Settings'];
 addpath(genpath(pathSettings_2D));
-pathRepo_track3D = [pathMainRepo,'\trackingSimulations_3D\'];
+pathRepo_track3D = [pathMainRepo,'/trackingSimulations_3D/'];
 pathSettings_track3D = [pathRepo_track3D,'Settings'];
 addpath(genpath(pathSettings_track3D));
-pathResults_pend = [pathMainRepo,'\pendulumSimulations\Results\'];
+pathResults_pend = [pathMainRepo,'/pendulumSimulations/Results/'];
 % Colors
 color_all(1,:) = [253,174,97]/255; % Orange
 % Threshold used to discriminate between optimal solutions. We exclude the
@@ -186,12 +186,12 @@ reg_all.pred2D.ma97.exact.std = nanstd(reg_all.pred2D.ma97.exact.all,[],1);
 %% Extract results pendulum simulations
 for i = 2:10
     % Add results from AD
-    load([pathResults_pend,'\Pendulum_',num2str(i),'dofs\solution_AD_Paper'],...
+    load([pathResults_pend,'/Pendulum_',num2str(i),'dofs/solution_AD_Paper'],...
         'solution');
     PendulumResultsAll.(['pendulum_',num2str(i),'dofs']).AD = solution;
     % Add results from FD
-    load([pathResults_pend,'\Pendulum_',num2str(i), ...
-        'dofs\solution_FD_F_Paper'],'solution');
+    load([pathResults_pend,'/Pendulum_',num2str(i), ...
+        'dofs/solution_FD_F_Paper'],'solution');
     PendulumResultsAll.(['pendulum_',num2str(i),'dofs']).FD = solution;
 end
 count = 1;

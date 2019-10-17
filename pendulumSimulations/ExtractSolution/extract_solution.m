@@ -2,7 +2,7 @@
 % column vector containing all optimal design variables.
 %
 % Author: Gil Serrancoli
-% Date: 16/10/2019
+% Date: 16	10/2019
 
 % Joint positions and velocities at mesh points
 for nqi=1:2*nq

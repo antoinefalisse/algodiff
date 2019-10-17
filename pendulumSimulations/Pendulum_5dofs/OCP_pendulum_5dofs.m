@@ -61,7 +61,7 @@ cd(pathmain);
 % polynomials to approximate the state derivatives at the collocation
 % points in each mesh interval. We use d=3 collocation points per mesh
 % interval and Radau collocation points. 
-pathCollocationScheme = [pathRepo,'\CollocationScheme'];
+pathCollocationScheme = [pathRepo,'/CollocationScheme'];
 addpath(genpath(pathCollocationScheme));
 d = 3; % degree of interpolating polynomial
 method = 'radau'; % collocation method
@@ -264,15 +264,15 @@ end
 solver = nlpsol('solver', 'ipopt', prob, options);
 
 diary_file_name=['diary_file_' Options.derivatives '.txt'];
-pathResults = [pathRepo,'\Results\Pendulum_5dofs\'];
+pathResults = [pathRepo,'/Results/Pendulum_5dofs/'];
 if ~(exist(pathResults,'dir')==7)
     mkdir(pathResults);
 end
 diary([pathResults,diary_file_name]);
 
 name_solution=['solution_' Options.derivatives];
-if (exist([pathResults,'\',name_solution,'.mat'],'file')==2) 
-    load([pathResults,'\',name_solution,'.mat']);
+if (exist([pathResults,'/',name_solution,'.mat'],'file')==2) 
+    load([pathResults,'/',name_solution,'.mat']);
 end
 
 % Solve the NLP
@@ -309,14 +309,14 @@ solution(i_IG,tol,dim3,dim4,dim5).x=full(sol.x);
 solution(i_IG,tol,dim3,dim4,dim5).lam_g=full(sol.lam_g);
 solution(i_IG,tol,dim3,dim4,dim5).lam_x=full(sol.lam_x);
 solution(i_IG,tol,dim3,dim4,dim5).stats=stats;
-pathExtractSolution = [pathRepo,'\ExtractSolution'];
+pathExtractSolution = [pathRepo,'/ExtractSolution'];
 addpath(genpath(pathExtractSolution));
 extract_solution;
 solution(i_IG,tol,dim3,dim4,dim5).x_opt=x_opt;
 solution(i_IG,tol,dim3,dim4,dim5).x_opt_ext=x_opt_ext;
 solution(i_IG,tol,dim3,dim4,dim5).uT_opt=uT_opt;
 solution(i_IG,tol,dim3,dim4,dim5).ua_opt=ua_opt;
-save([pathResults,'\',name_solution,'.mat'],'solution');
+save([pathResults,'/',name_solution,'.mat'],'solution');
 
 diary off;
 

@@ -25,13 +25,13 @@ ww_pend = 2:10;
 % Load pre-defined settings
 pathmain = pwd;
 [pathMainRepo,~,~] = fileparts(pathmain);
-pathRepo_2D = [pathMainRepo,'\predictiveSimulations_2D\'];
+pathRepo_2D = [pathMainRepo,'/predictiveSimulations_2D/'];
 pathSettings_2D = [pathRepo_2D,'Settings'];
 addpath(genpath(pathSettings_2D));
-pathRepo_3D = [pathMainRepo,'\trackingSimulations_3D\'];
+pathRepo_3D = [pathMainRepo,'/trackingSimulations_3D/'];
 pathSettings_3D = [pathRepo_3D,'Settings'];
 addpath(genpath(pathSettings_3D));
-pathResults_pend = [pathMainRepo,'\pendulumSimulations\Results\'];
+pathResults_pend = [pathMainRepo,'/pendulumSimulations/Results/'];
 % Colors
 color_all(1,:) = [244,194,13]/255;     
 color_all(2,:) = [219,50,54]/255;      
@@ -354,12 +354,12 @@ t_iter_all.track3D.ma97.all = NaN(size(n_iter_all.track3D.ma27.all));
 %% Extract results pendulum simulations.
 for i = 2:10
     % Add results from AD
-    load([pathResults_pend,'\Pendulum_',num2str(i),'dofs\solution_AD_Paper'],...
+    load([pathResults_pend,'/Pendulum_',num2str(i),'dofs/solution_AD_Paper'],...
         'solution');
     PendulumResults.(['pendulum_',num2str(i),'dofs']).AD = solution;
     % Add results from FD
-    load([pathResults_pend,'\Pendulum_',num2str(i),...
-        'dofs\solution_FD_F_Paper'], 'solution');
+    load([pathResults_pend,'/Pendulum_',num2str(i),...
+        'dofs/solution_FD_F_Paper'], 'solution');
     PendulumResults.(['pendulum_',num2str(i),'dofs']).FD = solution;
 end
 count = 1;

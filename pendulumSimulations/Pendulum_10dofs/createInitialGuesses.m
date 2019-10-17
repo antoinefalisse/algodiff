@@ -11,7 +11,7 @@ T=1;        % Time horizon in s
 
 main_folder=pwd;
 [pathRepo,~,~] = fileparts(main_folder);
-pathCollocationScheme = [pathRepo,'\CollocationScheme'];
+pathCollocationScheme = [pathRepo,'/CollocationScheme'];
 addpath(genpath(pathCollocationScheme));
 method = 'radau';
 [tau_root,~,~,~] = CollocationScheme(d,method);
