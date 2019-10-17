@@ -99,19 +99,17 @@ savename = ['_c',num2str(ww)];
 % about the external function can be found in the documentation.
 % We use different external functions, since we also want to access some 
 % parameters of the model in a post-processing phase.
-if strcmp(getenv('COMPUTERNAME'),'GBW-L-W2003')
-    % AD-Recorder or FD
-    if deri == 1 || deri == 3
-        pathexternal = [pathRepo,'/ExternalFunctions'];
-    % AD-ADOLC
-    elseif deri == 2
-        disp('ADOL-C cases not available')
-        break;
-    end
-    if analyseResults
-        pathexternal1 = [pathRepo,'/ExternalFunctions'];
-    end    
+% AD-Recorder or FD
+if deri == 1 || deri == 3
+    pathexternal = [pathRepo,'/ExternalFunctions'];
+% AD-ADOLC
+elseif deri == 2
+    disp('ADOL-C cases not available')
+    break;
 end
+if analyseResults
+    pathexternal1 = [pathRepo,'/ExternalFunctions'];
+end 
 % Load external functions
 cd(pathexternal);
 if ispc
