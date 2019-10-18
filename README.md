@@ -10,7 +10,7 @@ We then developed an interface between OpenSim and [CasADi](https://web.casadi.o
 
 We compared the computational efficiency of using standard finite differences (FD) versus AD, implemented through Recorder (AD-Recorder) and ADOL-C (AD-ADOLC), when solving a series of trajectory optimization problems. These problems consisted of simulations of perturbed balance, two-dimensional predictive simulations of walking, and three-dimensional tracking simulations of walking. We found that using AD through Recorder was between 1.8 ± 0.1 and 17.8 ± 4.9 times faster than using FD, and between 3.6 ± 0.3 and 12.3 ± 1.3 times faster than using AD through ADOL-C. The larger the problem the larger the computational benefit of using AD instead of FD.
 
-In this repository, we provide code necessary to re-produce the simulations with AD-Recorder and FD. We also provide code for analyzing the results and reproduce the figures presented in the associated [paper](https://doi.org/10.1371/journal.pone.0217730).
+In this repository, we provide code necessary to re-produce the simulations with AD-Recorder and FD. We also provide code for analyzing the results and reproducing the figures presented in the associated [paper](https://doi.org/10.1371/journal.pone.0217730).
 
 Brief overview of the repository
 --------------------------------
@@ -40,4 +40,6 @@ In our application, `F` represents the multi-body dynamics and is called when fo
 
 You can find more information about how to build this pipeline in this repository: https://github.com/antoinefalisse/opensim-core/tree/AD-recorder.
     
-Thanks for citing our work in any derived publication. Feel free to reach us for any questions: antoine.falisse@kuleuven.be | antoinefalisse@gmail.com | friedl.degroote@kuleuven.be | gil.serrancoli@upc.edu. This code has been developed on Windows using MATLAB2017b. There is no guarantee that it runs smooth on other platforms. Please let us know if you run into troubles.
+Thanks for citing our work in any derived publication. Feel free to reach us for any questions: antoine.falisse@kuleuven.be | antoinefalisse@gmail.com | friedl.degroote@kuleuven.be | gil.serrancoli@upc.edu. 
+
+This code has been developed on Windows using MATLAB2017b. There is no guarantee that it runs smooth on other platforms. Please let us know if you run into troubles.
