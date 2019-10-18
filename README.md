@@ -1,16 +1,16 @@
-Algorithmic differentiation (AD - algodiff)
-===========================================
+Algorithmic differentiation (AD - algodiff) in OpenSim
+======================================================
 
 This repository contains code and data to generate OpenSim-based trajectory optimization of human movement while exploiting algorithmic differentiation (AD) as described in: Falisse A, Serrancoli G, Dembia C, Gillis J, De Groote F, (2019). Algorithmic differentiation improves the computational efficiency of OpenSim-based trajectory optimization of human movement. PLoS ONE 14(10): e0217730, https://doi.org/10.1371/journal.pone.0217730.
 
 
-We enabled the use of AD in OpenSim through a custom source code transformation tool named Recorder and through the operator overloading tool ADOL-C. To enable the use of AD in OpenSim, we modified the source code of OpenSim and Simbody: https://github.com/antoinefalisse/opensim-core/tree/AD-recorder.
+We enabled the use of AD in OpenSim through a custom source code transformation tool named Recorder and through the operator overloading tool ADOL-C. For this purpose, we modified the source code of OpenSim and Simbody: https://github.com/antoinefalisse/opensim-core/tree/AD-recorder.
 
 We then developed an interface between OpenSim and [CasADi](https://web.casadi.org/) to solve trajectory optimization problems. CasADi is a tool for nonlinear optimization and algorithmic differentiation. 
 
-We compared the computational efficiency of using standard finite differences (FD) versus AD (through Recorder (AD-Recorder) and ADOL-C (AD-ADOLC)) when solving a series of trajectory optimization problems. These problems consisted of simulations of perturbed balance, two-dimensional predictive simulations of walking, and three-dimensional tracking simulations of walking. We found that using AD through Recorder was between 1.8 ± 0.1 and 17.8 ± 4.9 times faster than using FD, and between 3.6 ± 0.3 and 12.3 ± 1.3 times faster than using AD through ADOL-C. The larger the problem the larger the computational benefit of using AD instead of FD.
+We compared the computational efficiency of using standard finite differences (FD) versus AD, implemented through Recorder (AD-Recorder) and ADOL-C (AD-ADOLC), when solving a series of trajectory optimization problems. These problems consisted of simulations of perturbed balance, two-dimensional predictive simulations of walking, and three-dimensional tracking simulations of walking. We found that using AD through Recorder was between 1.8 ± 0.1 and 17.8 ± 4.9 times faster than using FD, and between 3.6 ± 0.3 and 12.3 ± 1.3 times faster than using AD through ADOL-C. The larger the problem the larger the computational benefit of using AD instead of FD.
 
-In this repository, we provide code necessary to perform these simulations with AD-Recorder and FD (providing OpenSim and Simbody modified for use with ADOL-C is more complicated and less relevant since Recorder is more efficient than ADOL-C as well as easier to use). We also provide code for analyzing the results and reproduce the figures presented in the associated [paper](https://doi.org/10.1371/journal.pone.0217730).
+In this repository, we provide code necessary to re-produce the simulations with AD-Recorder and FD. We also provide code for analyzing the results and reproduce the figures presented in the associated [paper](https://doi.org/10.1371/journal.pone.0217730).
 
 Brief overview of the repository
 --------------------------------
