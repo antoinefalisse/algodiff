@@ -10,7 +10,8 @@ clc
 
 %% User settings
 % Select trials, for example
-ww_2D  = [1,2,3];
+ww_2D  = [2,2];
+ww_2Di  = [1,2];
 
 %% Other settings
 % Load pre-defined settings
@@ -21,7 +22,6 @@ addpath(genpath(pathSettings));
 subject = 'subject1';
 body_mass = 62;
 body_weight = 62*9.81;
-setup.ocp = 'PredSim_2D'; 
 
 %% Load results
 % Pre-allocation structures
@@ -35,7 +35,13 @@ legend_case  	= cell(1,length(ww_2D));
 settings_2D
 % Loop over cases
 for k = 1:length(ww_2D)
-    data_2D;
+    if ww_2Di(k) == 1
+        setup.ocp = 'PredSim_2D'; 
+        data_2D;
+    elseif ww_2Di(k) == 2
+        setup.ocp = 'PredSim_2D_original'; 
+        data_2D_original;        
+    end
     legend_case{k} = ['Case: ',num2str(ww_2D(k))];
 end
 
@@ -70,8 +76,8 @@ for i = 1:length(idx_Qs)
     p = gobjects(1,length(ww_2D));
     % Simulation results
     for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(Qs_opt_2D(ww_2D(k)).m,1)-1):100;
-        p(k) = plot(x,Qs_opt_2D(ww_2D(k)).m(:,idx_Qs(i)),...
+        x = 1:(100-1)/(size(Qs_opt_2D(k).m,1)-1):100;
+        p(k) = plot(x,Qs_opt_2D(k).m(:,idx_Qs(i)),...
             'color',col(k,:),'linewidth',line_linewidth);
         hold on;    
     end
@@ -81,9 +87,9 @@ for i = 1:length(idx_Qs)
         2*Qref.(subject).Qs.std(:,idx_jref);
     meanMinusSTD = Qref.(subject).Qs.mean(:,idx_jref) - ...
         2*Qref.(subject).Qs.std(:,idx_jref);          
-    stepQ = (size(Qs_opt_2D(ww_2D(k)).m,1)-1)/(size(meanPlusSTD,1)-1);
-    intervalQ = 1:stepQ:size(Qs_opt_2D(ww_2D(k)).m,1);
-    sampleQ = 1:size(Qs_opt_2D(ww_2D(k)).m,1);
+    stepQ = (size(Qs_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
+    intervalQ = 1:stepQ:size(Qs_opt_2D(k).m,1);
+    sampleQ = 1:size(Qs_opt_2D(k).m,1);
     meanPlusSTD = interp1(intervalQ,meanPlusSTD,sampleQ);
     meanMinusSTD = interp1(intervalQ,meanMinusSTD,sampleQ);
     hold on
@@ -123,8 +129,8 @@ for i = 1:length(idx_Qs)
     p = gobjects(1,length(ww_2D));
     % Simulation results
     for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(Qdots_opt_2D(ww_2D(k)).m,1)-1):100;
-        p(k) = plot(x,Qdots_opt_2D(ww_2D(k)).m(:,idx_Qs(i)),...
+        x = 1:(100-1)/(size(Qdots_opt_2D(k).m,1)-1):100;
+        p(k) = plot(x,Qdots_opt_2D(k).m(:,idx_Qs(i)),...
             'color',col(k,:),'linewidth',line_linewidth);
         hold on;    
     end
@@ -134,9 +140,9 @@ for i = 1:length(idx_Qs)
         2*Qref.(subject).Qdots.std(:,idx_jref);
     meanMinusSTD = Qref.(subject).Qdots.mean(:,idx_jref) - ...
         2*Qref.(subject).Qdots.std(:,idx_jref);          
-    stepQ = (size(Qdots_opt_2D(ww_2D(k)).m,1)-1)/(size(meanPlusSTD,1)-1);
-    intervalQ = 1:stepQ:size(Qdots_opt_2D(ww_2D(k)).m,1);
-    sampleQ = 1:size(Qdots_opt_2D(ww_2D(k)).m,1);
+    stepQ = (size(Qdots_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
+    intervalQ = 1:stepQ:size(Qdots_opt_2D(k).m,1);
+    sampleQ = 1:size(Qdots_opt_2D(k).m,1);
     meanPlusSTD = interp1(intervalQ,meanPlusSTD,sampleQ);
     meanMinusSTD = interp1(intervalQ,meanMinusSTD,sampleQ);
     hold on
@@ -177,17 +183,17 @@ for i = 1:length(GRF_str)
     % Simulation results
     p = gobjects(1,length(ww_2D));
     for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(GRFs_opt_2D(ww_2D(k)).m,1)-1):100;
-        p(k) = plot(x,GRFs_opt_2D(ww_2D(k)).m(:,i),'color',...
+        x = 1:(100-1)/(size(GRFs_opt_2D(k).m,1)-1):100;
+        p(k) = plot(x,GRFs_opt_2D(k).m(:,i),'color',...
             col(k,:),'linewidth',line_linewidth);
         hold on;         
     end    
     % Experimental data
     meanPlusSTD = GRFref.(subject).mean(:,i) + 2*GRFref.(subject).std(:,i);    
     meanMinusSTD = GRFref.(subject).mean(:,i) - 2*GRFref.(subject).std(:,i);   
-    stepGRF = (size(GRFs_opt_2D(ww_2D(k)).m,1)-1)/(size(meanPlusSTD,1)-1);
-    intervalGRF = 1:stepGRF:size(GRFs_opt_2D(ww_2D(k)).m,1);
-    sampleGRF = 1:size(GRFs_opt_2D(ww_2D(k)).m,1);
+    stepGRF = (size(GRFs_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
+    intervalGRF = 1:stepGRF:size(GRFs_opt_2D(k).m,1);
+    sampleGRF = 1:size(GRFs_opt_2D(k).m,1);
     meanPlusSTD = interp1(intervalGRF,meanPlusSTD,sampleGRF);
     meanMinusSTD = interp1(intervalGRF,meanMinusSTD,sampleGRF);
     hold on
@@ -229,8 +235,8 @@ for i = 1:length(idx_Qs)-1
     % Simulation results
     p = gobjects(1,length(ww_2D));
     for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(Ts_opt_2D(ww_2D(k)).m,1)-1):100;
-        p(k) = plot(x,Ts_opt_2D(ww_2D(k)).m(:,idx_Qs(i+1))*body_mass,...
+        x = 1:(100-1)/(size(Ts_opt_2D(k).m,1)-1):100;
+        p(k) = plot(x,Ts_opt_2D(k).m(:,idx_Qs(i+1))*body_mass,...
             'color',col(k,:),'linewidth',line_linewidth);
         hold on;    
     end
@@ -240,9 +246,9 @@ for i = 1:length(idx_Qs)-1
         2*IDref.(subject).std(:,idx_jref);
     meanMinusSTD = IDref.(subject).mean(:,idx_jref) - ...
         2*IDref.(subject).std(:,idx_jref);  
-    stepID = (size(Ts_opt_2D(ww_2D(k)).m,1)-1)/(size(meanPlusSTD,1)-1);
-    intervalID = 1:stepID:size(Ts_opt_2D(ww_2D(k)).m,1);
-    sampleID = 1:size(Ts_opt_2D(ww_2D(k)).m,1);
+    stepID = (size(Ts_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
+    intervalID = 1:stepID:size(Ts_opt_2D(k).m,1);
+    sampleID = 1:size(Ts_opt_2D(k).m,1);
     meanPlusSTD = interp1(intervalID,meanPlusSTD,sampleID);
     meanMinusSTD = interp1(intervalID,meanMinusSTD,sampleID); 
     hold on
@@ -282,9 +288,9 @@ for i = 1:length(idx_Qs)-1
     % Simulation results
     p = gobjects(1,length(ww_2D));
     for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(Qdots_opt_2D(ww_2D(k)).m,1)-1):100;
-        p(k) = plot(x,Qdots_opt_2D(ww_2D(k)).m(:,idx_Qs(i+1)).*pi/180.*...
-            Ts_opt_2D(ww_2D(k)).m(:,idx_Qs(i+1))*body_mass,...
+        x = 1:(100-1)/(size(Qdots_opt_2D(k).m,1)-1):100;
+        p(k) = plot(x,Qdots_opt_2D(k).m(:,idx_Qs(i+1)).*pi/180.*...
+            Ts_opt_2D(k).m(:,idx_Qs(i+1))*body_mass,...
             'color',col(k,:),'linewidth',line_linewidth);
         hold on;    
     end
@@ -294,9 +300,9 @@ for i = 1:length(idx_Qs)-1
         2*Pref.(subject).std(:,idx_jref);
     meanMinusSTD = Pref.(subject).mean(:,idx_jref) - ...
         2*Pref.(subject).std(:,idx_jref);          
-    stepQ = (size(Qdots_opt_2D(ww_2D(k)).m,1)-1)/(size(meanPlusSTD,1)-1);
-    intervalQ = 1:stepQ:size(Qdots_opt_2D(ww_2D(k)).m,1);
-    sampleQ = 1:size(Qdots_opt_2D(ww_2D(k)).m,1);
+    stepQ = (size(Qdots_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
+    intervalQ = 1:stepQ:size(Qdots_opt_2D(k).m,1);
+    sampleQ = 1:size(Qdots_opt_2D(k).m,1);
     meanPlusSTD = interp1(intervalQ,meanPlusSTD,sampleQ);
     meanMinusSTD = interp1(intervalQ,meanMinusSTD,sampleQ);
     hold on
@@ -343,21 +349,21 @@ EMGcol(EMGchannel==99)=0;
 EMGref.(subject).allnorm = ...
     NaN(2*N,size(EMGref.(subject).all,2),size(EMGref.(subject).all,3));
 % Plot   
-NMuscle = size(Acts_opt_2D(ww_2D(k)).m,2);
+NMuscle = size(Acts_opt_2D(k).m,2);
 figure()
-for i = 1:size(Acts_opt_2D(ww_2D(k)).m,2)/2
+for i = 1:size(Acts_opt_2D(k).m,2)/2
     subplot(2,5,i)
     p = gobjects(1,length(ww_2D));   
     % Simulation results
     for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(Acts_opt_2D(ww_2D(k)).m,1)-1):100;
-        p(k) = plot(x,Acts_opt_2D(ww_2D(k)).m(:,i+NMuscle/2),'color',...
+        x = 1:(100-1)/(size(Acts_opt_2D(k).m,1)-1):100;
+        p(k) = plot(x,Acts_opt_2D(k).m(:,i+NMuscle/2),'color',...
             col(k,:),'linewidth',line_linewidth);
         hold on;
     end
     if EMGcol(i)
         % Normalize peak EMG to peak muscle activation
-        a_peak = max(Acts_opt_2D(ww_2D(k)).m(:,i+NMuscle/2));
+        a_peak = max(Acts_opt_2D(k).m(:,i+NMuscle/2));
         emg_peak = zeros(1,size(EMGref.(subject).all,3));
         for j = 1:size(EMGref.(subject).all,3)
             emg_peak(j) = nanmax(EMGref.(subject).all(:,EMGchannel(i),j),[],1);
@@ -374,9 +380,9 @@ for i = 1:size(Acts_opt_2D(ww_2D(k)).m,2)/2
             2*EMGref.(subject).stdnorm(:,EMGchannel(i));
         meanMinusSTD = EMGref.(subject).meannorm(:,EMGchannel(i)) - ...
             2*EMGref.(subject).stdnorm(:,EMGchannel(i));
-        stepa = (size(Acts_opt_2D(ww_2D(k)).m,1)-1)/(size(meanMinusSTD,1)-1);
-        intervala = 1:stepa:size(Acts_opt_2D(ww_2D(k)).m,1);
-        samplea = 1:size(Acts_opt_2D(ww_2D(k)).m,1);
+        stepa = (size(Acts_opt_2D(k).m,1)-1)/(size(meanMinusSTD,1)-1);
+        intervala = 1:stepa:size(Acts_opt_2D(k).m,1);
+        samplea = 1:size(Acts_opt_2D(k).m,1);
         meanPlusSTD = interp1(intervala,meanPlusSTD,samplea);
         meanMinusSTD = interp1(intervala,meanMinusSTD,samplea);     
         hold on
@@ -415,13 +421,13 @@ set(sp,'Fontsize',sup_fontsize);
 
 %% Plot muscle activations (left)
 figure()
-for i = 1:size(Acts_opt_2D(ww_2D(k)).m,2)/2
+for i = 1:size(Acts_opt_2D(k).m,2)/2
     subplot(2,5,i)
     p = gobjects(1,length(ww_2D));
-    NMuscle = size(Acts_opt_2D(ww_2D(k)).m,2);
+    NMuscle = size(Acts_opt_2D(k).m,2);
     for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(Acts_opt_2D(ww_2D(k)).m,1)-1):100;
-        p(k) = plot(x,Acts_opt_2D(ww_2D(k)).m(:,i),'color',col(k,:),...
+        x = 1:(100-1)/(size(Acts_opt_2D(k).m,1)-1):100;
+        p(k) = plot(x,Acts_opt_2D(k).m(:,i),'color',col(k,:),...
             'linewidth',line_linewidth);
         hold on;
     end
@@ -459,20 +465,20 @@ set(sp,'Fontsize',sup_fontsize);
 CPU_IPOPT = struct('m',[]);
 CPU_NLP = struct('m',[]);
 for k = 1:length(ww_2D)
-    CPU_IPOPT(ww_2D(k)).m = Stats_2D(ww_2D(k)).m.t_proc_solver - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_f - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_g - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_grad - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_grad_f - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_jac_g;
-    CPU_NLP(ww_2D(k)).m = Stats_2D(ww_2D(k)).m.t_proc_solver - ...
-        CPU_IPOPT(ww_2D(k)).m;
+    CPU_IPOPT(k).m = Stats_2D(k).m.t_proc_solver - ...
+        Stats_2D(k).m.t_proc_nlp_f - ...
+        Stats_2D(k).m.t_proc_nlp_g - ...
+        Stats_2D(k).m.t_proc_nlp_grad - ...
+        Stats_2D(k).m.t_proc_nlp_grad_f - ...
+        Stats_2D(k).m.t_proc_nlp_jac_g;
+    CPU_NLP(k).m = Stats_2D(k).m.t_proc_solver - ...
+        CPU_IPOPT(k).m;
 end
 figure()
 subplot(2,3,1)
 p = gobjects(1,length(ww_2D));
 for k = 1:length(ww_2D)
-    p(k) = scatter(k,CPU_IPOPT(ww_2D(k)).m,40,col(k,:),'filled');
+    p(k) = scatter(k,CPU_IPOPT(k).m,40,col(k,:),'filled');
     hold on;    
 end
 set(gca,'Fontsize',label_fontsize);
@@ -482,7 +488,7 @@ ylabel('(s)','Fontsize',label_fontsize);
 subplot(2,3,2)
 p = gobjects(1,length(ww_2D));
 for k = 1:length(ww_2D)
-    p(k) = scatter(k,CPU_NLP(ww_2D(k)).m,40,col(k,:),'filled');
+    p(k) = scatter(k,CPU_NLP(k).m,40,col(k,:),'filled');
     hold on;    
 end
 set(gca,'Fontsize',label_fontsize);
@@ -492,7 +498,7 @@ ylabel('(s)','Fontsize',label_fontsize);
 subplot(2,3,3)
 p = gobjects(1,length(ww_2D));
 for k = 1:length(ww_2D)
-    p(k) = scatter(k,(CPU_IPOPT(ww_2D(k)).m+CPU_NLP(ww_2D(k)).m),...
+    p(k) = scatter(k,(CPU_IPOPT(k).m+CPU_NLP(k).m),...
         40,col(k,:),'filled');
     hold on;    
 end
@@ -503,7 +509,7 @@ ylabel('(s)','Fontsize',label_fontsize);
 subplot(2,3,4)
 p = gobjects(1,length(ww_2D));
 for k = 1:length(ww_2D)
-    p(k) = scatter(k,(Stats_2D(ww_2D(k)).m.iterations.obj(end)),...
+    p(k) = scatter(k,(Stats_2D(k).m.iterations.obj(end)),...
         40,col(k,:),'filled');
     hold on;    
 end
@@ -516,7 +522,7 @@ set(l,'Fontsize',label_fontsize)
 subplot(2,3,5)
 p = gobjects(1,length(ww_2D));
 for k = 1:length(ww_2D)
-    p(k) = scatter(k,(Stats_2D(ww_2D(k)).m.iter_count),...
+    p(k) = scatter(k,(Stats_2D(k).m.iter_count),...
         40,col(k,:),'filled');
     hold on;    
 end
@@ -529,7 +535,7 @@ set(l,'Fontsize',label_fontsize)
 subplot(2,3,6)
 p = gobjects(1,length(ww_2D));
 for k = 1:length(ww_2D)
-    p(k) = scatter(k,(Stats_2D(ww_2D(k)).m.iterations.inf_du(end)),...
+    p(k) = scatter(k,(Stats_2D(k).m.iterations.inf_du(end)),...
         40,col(k,:),'filled');
     hold on;    
 end
@@ -542,16 +548,16 @@ set(l,'Fontsize',label_fontsize)
 %% CPU time breakdown
 yy = zeros(2,length(ww_2D));
 for k = 1:length(ww_2D)
-    yy(k,1) = Stats_2D(ww_2D(k)).m.t_proc_solver - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_f - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_g - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_grad - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_grad_f - ...
-        Stats_2D(ww_2D(k)).m.t_proc_nlp_jac_g;
-    yy(k,2) = Stats_2D(ww_2D(k)).m.t_proc_nlp_f;
-    yy(k,3) = Stats_2D(ww_2D(k)).m.t_proc_nlp_g;
-    yy(k,4) = Stats_2D(ww_2D(k)).m.t_proc_nlp_grad_f;
-    yy(k,5) = Stats_2D(ww_2D(k)).m.t_proc_nlp_jac_g;
+    yy(k,1) = Stats_2D(k).m.t_proc_solver - ...
+        Stats_2D(k).m.t_proc_nlp_f - ...
+        Stats_2D(k).m.t_proc_nlp_g - ...
+        Stats_2D(k).m.t_proc_nlp_grad - ...
+        Stats_2D(k).m.t_proc_nlp_grad_f - ...
+        Stats_2D(k).m.t_proc_nlp_jac_g;
+    yy(k,2) = Stats_2D(k).m.t_proc_nlp_f;
+    yy(k,3) = Stats_2D(k).m.t_proc_nlp_g;
+    yy(k,4) = Stats_2D(k).m.t_proc_nlp_grad_f;
+    yy(k,5) = Stats_2D(k).m.t_proc_nlp_jac_g;
 end
 % Colors
 color_all(1,:) = [244,194,13]/255;
@@ -579,7 +585,7 @@ box off;
 %% Average CPU time over trials selected
 CPU_time_all.all = zeros(1,length(ww_2D));
 for k = 1:length(ww_2D)
-    CPU_time_all.all(k) = Stats_2D(ww_2D(k)).m.t_proc_solver;
+    CPU_time_all.all(k) = Stats_2D(k).m.t_proc_solver;
 end
 CPU_time_all.mean = mean(CPU_time_all.all);
 CPU_time_all.std = std(CPU_time_all.all);

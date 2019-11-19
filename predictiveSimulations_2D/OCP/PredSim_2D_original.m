@@ -28,7 +28,7 @@ close all;
 % num_set(6): set to 1 to write .mot file
 
 num_set = [1,1,0,1,0,1]; % This configuration solves the problem
-% num_set = [0,1,1,1,0,1]; % This configuration analyzes the results
+% num_set = [0,1,1,0,0,1]; % This configuration analyzes the results
 
 % The variable settings in the following section (loaded through
 % settings_PredSim_2D) will set some parameters of the optimal control problems.
@@ -424,37 +424,13 @@ if solveProblem
             ubw     = [ubw; bounds.a_b.upper'];
             w0      = [w0;  guess.a_b(k+1,:)'];
         end   
-        % Define controls at collocation points
-        % Time derivative of muscle-tendon forces
-        dFTtildekj = {};
-        for j=1:d
-            dFTtildekj{j}   = ...
-                MX.sym(['dFTtilde_' num2str(k) '_' num2str(j)], NMuscle);
-            w               = {w{:}, dFTtildekj{j}};
-            lbw             = [lbw; bounds.dFTtilde.lower'];
-            ubw             = [ubw; bounds.dFTtilde.upper'];
-            w0              = [w0;  guess.dFTtilde(k+1,:)'];
-        end
-        % Time derivative of Qdots
-        Akj = {};
-        for j=1:d
-            Akj{j} = MX.sym(['A_' num2str(k) '_' num2str(j)], nq.all);
-            w      = {w{:}, Akj{j}};
-            lbw    = [lbw; bounds.Qdotdots.lower'];
-            ubw    = [ubw; bounds.Qdotdots.upper'];
-            w0     = [w0;  guess.Qdotdots(k+1,:)'];
-        end        
         % Unscale variables for later use
         Xk_nsc          = Xk{k+1,1}.*scaling.QsQdots';
         FTtildek_nsc    = FTtildek.*(scaling.FTtilde');
-        dFTtildek_nsc   = dFTtildek.*(scaling.dFTtilde');
         Ak_nsc          = Ak.*scaling.Qdotdots';
-        vAk_nsc         = vAk.*scaling.vA; 
         for j=1:d
-            Xkj_nsc{j}          = Xkj{j}.*scaling.QsQdots';
-            FTtildekj_nsc{j}    = FTtildekj{j}.*scaling.FTtilde';  
-            dFTtildekj_nsc{j}   = dFTtildekj{j}.*scaling.dFTtilde'; 
-            Akj_nsc{j}          = Akj{j}.*scaling.Qdotdots';
+            Xkj_nsc{j} = Xkj{j}.*scaling.QsQdots';
+            FTtildekj_nsc{j} = FTtildekj{j}.*scaling.FTtilde';
         end   
         % Get muscle-tendon lengths, velocities, and moment arms
         % Left leg
@@ -481,16 +457,16 @@ if solveProblem
         vMTk_lr     = [vMTk_l;vMTk_r];   
         % Get muscle-tendon forces and derive Hill-equilibrium
         [Hilldiffk,FTk,Fcek,Fpassk,Fisok,vMmaxk,massMk] = ...
-            f_forceEquilibrium_FtildeState(ak,FTtildek_nsc,...
-            dFTtildek_nsc,lMTk_lr,vMTk_lr,tensions);              
+            f_forceEquilibrium_FtildeState(ak,FTtildek.*scaling.FTtilde',...
+            dFTtildek.*scaling.dFTtilde,lMTk_lr,vMTk_lr,tensions);              
         % Get metabolic energy rate if in the cost function   
         if W.mE ~= 0    
             % Get muscle fiber lengths
             [~,lMtildek] = f_FiberLength_TendonForce(...
-                FTtildek_nsc,lMTk_lr); 
+                FTtildek.*scaling.FTtilde',lMTk_lr); 
             % Get muscle fiber velocities
-            [vMk,~] = f_FiberVelocity_TendonForce(FTtildek_nsc,...
-                dFTtildek_nsc,lMTk_lr,vMTk_lr);
+            [vMk,~] = f_FiberVelocity_TendonForce(FTtildek.*scaling.FTtilde',...
+                dFTtildek.*scaling.dFTtilde,lMTk_lr,vMTk_lr);
             % Get metabolic energy rate
             [e_tot,~,~,~,~,~] = fgetMetabolicEnergySmooth2004all(ak,ak,...
                 lMtildek,vMk,Fcek,Fpassk,massMk,pctsts,Fisok,...
@@ -517,21 +493,21 @@ if solveProblem
             % Dynamic constraints are scaled using the same scale
             % factors as was used to scale the states
             % Activation dynamics (implicit formulation)  
-            g       = {g{:}, (h*vAk_nsc - ap)./scaling.a};
+            g       = {g{:}, (h*vAk.*scaling.vA - ap)./scaling.a};
             lbg     = [lbg; zeros(NMuscle,1)];
             ubg     = [ubg; zeros(NMuscle,1)]; 
             % Contraction dynamics (implicit formulation)          
-            g       = {g{:}, (h*dFTtildekj_nsc{j} - FTtildep_nsc)./...
-                (scaling.FTtilde')};
+            g       = {g{:}, (h*dFTtildek.*scaling.dFTtilde - ...
+                FTtildep_nsc)./(scaling.FTtilde')};
             lbg     = [lbg; zeros(NMuscle,1)];
             ubg     = [ubg; zeros(NMuscle,1)];
             % Skeleton dynamics (implicit formulation)  
             xj_nsc  = [...
-                Xkj_nsc{j}(2); Akj_nsc{j}(1); Xkj_nsc{j}(4); Akj_nsc{j}(2);...
-                Xkj_nsc{j}(6); Akj_nsc{j}(3); Xkj_nsc{j}(8); Akj_nsc{j}(4);...
-                Xkj_nsc{j}(10); Akj_nsc{j}(5); Xkj_nsc{j}(12); Akj_nsc{j}(6);...
-                Xkj_nsc{j}(14); Akj_nsc{j}(7); Xkj_nsc{j}(16); Akj_nsc{j}(8);...
-                Xkj_nsc{j}(18); Akj_nsc{j}(9); Xkj_nsc{j}(20); Akj_nsc{j}(10)];
+                Xkj_nsc{j}(2); Ak_nsc(1); Xkj_nsc{j}(4); Ak_nsc(2);...
+                Xkj_nsc{j}(6); Ak_nsc(3); Xkj_nsc{j}(8); Ak_nsc(4);...
+                Xkj_nsc{j}(10); Ak_nsc(5); Xkj_nsc{j}(12); Ak_nsc(6);...
+                Xkj_nsc{j}(14); Ak_nsc(7); Xkj_nsc{j}(16); Ak_nsc(8);...
+                Xkj_nsc{j}(18); Ak_nsc(9); Xkj_nsc{j}(20); Ak_nsc(10)];
             g       = {g{:}, (h*xj_nsc - xp_nsc)./(scaling.QsQdots')};
             lbg     = [lbg; zeros(2*nq.all,1)];
             ubg     = [ubg; zeros(2*nq.all,1)];   
@@ -550,116 +526,26 @@ if solveProblem
                 J = J + 1/(dist_trav_tot)*(...
                     W.act*B(j+1)    *(f_sumsqr_exp(akj{j},exp_A))*h + ...
                     W.back*B(j+1)   *(sumsqr(e_bk))*h +... 
-                    W.acc*B(j+1)    *(sumsqr(Akj{j}))*h + ...                          
+                    W.acc*B(j+1)    *(sumsqr(Ak))*h + ...                          
                     W.u*B(j+1)      *(sumsqr(vAk))*h + ...
-                    W.u*B(j+1)      *(sumsqr(dFTtildekj{j}))*h);  
+                    W.u*B(j+1)      *(sumsqr(dFTtildek))*h);  
             elseif W.act == 0
                 J = J + 1/(dist_trav_tot)*(...
                     W.mE*B(j+1)     *(f_sumsqr_exp(e_tot,exp_E))*h + ...
                     W.back*B(j+1)   *(sumsqr(e_bk))*h +... 
-                    W.acc*B(j+1)    *(sumsqr(Akj{j}))*h + ...                          
+                    W.acc*B(j+1)    *(sumsqr(Ak))*h + ...                          
                     W.u*B(j+1)      *(sumsqr(vAk))*h + ...
-                    W.u*B(j+1)      *(sumsqr(dFTtildekj{j}))*h);  
+                    W.u*B(j+1)      *(sumsqr(dFTtildek))*h);  
             else
                 J = J + 1/(dist_trav_tot)*(...
                     W.act*B(j+1)    *(f_sumsqr_exp(akj{j},exp_A))*h + ...
                     W.mE*B(j+1)     *(f_sumsqr_exp(e_tot,exp_E))*h + ...
                     W.back*B(j+1)   *(sumsqr(e_bk))*h +... 
-                    W.acc*B(j+1)    *(sumsqr(Akj{j}))*h + ...                          
+                    W.acc*B(j+1)    *(sumsqr(Ak))*h + ...                          
                     W.u*B(j+1)      *(sumsqr(vAk))*h + ...
-                    W.u*B(j+1)      *(sumsqr(dFTtildekj{j}))*h);  
-            end                       
-                   
-            % Get muscle-tendon lengths, velocities, and moment arms
-            % Left leg
-            qinkj_l = [Xkj_nsc{j}(jointi.hip.l*2-1,1),...
-                Xkj_nsc{j}(jointi.knee.l*2-1,1),...
-                Xkj_nsc{j}(jointi.ankle.l*2-1,1)];  
-            qdotinkj_l = [Xkj_nsc{j}(jointi.hip.l*2,1),...
-                Xkj_nsc{j}(jointi.knee.l*2,1),Xkj_nsc{j}(jointi.ankle.l*2,1)];  
-            [lMTkj_l,vMTkj_l,MAkj_l] = f_lMT_vMT_dM(qinkj_l,qdotinkj_l);    
-            MAkj_hip_l    =  MAkj_l(mai(1).mus.l',1);
-            MAkj_knee_l   =  MAkj_l(mai(2).mus.l',2);
-            MAkj_ankle_l  =  MAkj_l(mai(3).mus.l',3);    
-            % Right leg
-            qinkj_r = [Xkj_nsc{j}(jointi.hip.r*2-1,1),...
-                Xkj_nsc{j}(jointi.knee.r*2-1,1),...
-                Xkj_nsc{j}(jointi.ankle.r*2-1,1)];  
-            qdotinkj_r = [Xkj_nsc{j}(jointi.hip.r*2,1),...
-                Xkj_nsc{j}(jointi.knee.r*2,1), Xkj_nsc{j}(jointi.ankle.r*2,1)];      
-            [lMTkj_r,vMTkj_r,MAkj_r] = f_lMT_vMT_dM(qinkj_r,qdotinkj_r);  
-            % Here we take the indices from left since the vector is 1:NMuscle/2
-            MAkj_hip_r    = MAkj_r(mai(1).mus.l',1);
-            MAkj_knee_r   = MAkj_r(mai(2).mus.l',2);
-            MAkj_ankle_r  = MAkj_r(mai(3).mus.l',3);
-            % Both legs
-            lMTkj_lr     = [lMTkj_l;lMTkj_r];
-            vMTkj_lr     = [vMTkj_l;vMTkj_r];   
-            % Get muscle-tendon forces and derive Hill-equilibrium
-            [Hilldiffkj,FTkj,~,~,~,~,~] = ...
-                f_forceEquilibrium_FtildeState(akj{j},FTtildekj_nsc{j},...
-                dFTtildekj_nsc{j},lMTkj_lr,vMTkj_lr,tensions); 
-            
-            % Call external function
-            if deri == 2
-                [Tkj] = F(Xkj_nsc{j},Akj_nsc{j}); 
-            else
-                [Tkj] = F([Xkj_nsc{j};Akj_nsc{j}]);      
-            end
-            % Add path constraints
-            % Null pelvis residuals
-            g           = {g{:},Tkj(jointi.gr_pelvis,1)};
-            lbg         = [lbg; zeros(nq.abs,1)];
-            ubg         = [ubg; zeros(nq.abs,1)];    
-            % Muscle-driven joint torques for the lower limbs and the trunk
-            % Hip flexion, left
-            Ftkj_hip_l  = FTkj(mai(1).mus.l',1);
-            Tkj_hip_l   = f_T4(MAkj_hip_l,Ftkj_hip_l);
-            g           = {g{:},(Tkj(jointi.hip.l,1)-(Tkj_hip_l))};
-            lbg         = [lbg; 0];
-            ubg         = [ubg; 0];    
-            % Hip flexion, right
-            Ftkj_hip_r  = FTkj(mai(1).mus.r',1);
-            Tkj_hip_r   = f_T4(MAkj_hip_r,Ftkj_hip_r);
-            g           = {g{:},(Tkj(jointi.hip.r,1)-(Tkj_hip_r))};
-            lbg         = [lbg; 0];
-            ubg         = [ubg; 0];    
-            % Knee, left
-            Ftkj_knee_l = FTkj(mai(2).mus.l',1);
-            Tkj_knee_l  = f_T5(MAkj_knee_l,Ftkj_knee_l);
-            g           = {g{:},(Tkj(jointi.knee.l,1)-(Tkj_knee_l))};
-            lbg         = [lbg; 0];
-            ubg         = [ubg; 0];    
-            % Knee, right
-            Ftkj_knee_r = FTkj(mai(2).mus.r',1);
-            Tkj_knee_r  = f_T5(MAkj_knee_r,Ftkj_knee_r);
-            g           = {g{:},(Tkj(jointi.knee.r,1)-(Tkj_knee_r))};
-            lbg         = [lbg; 0];
-            ubg         = [ubg; 0];    
-            % Ankle, left
-            Ftkj_ankle_l    = FTkj(mai(3).mus.l',1);
-            Tkj_ankle_l     = f_T3(MAkj_ankle_l,Ftkj_ankle_l);
-            g               = {g{:},(Tkj(jointi.ankle.l,1)-(Tkj_ankle_l))};
-            lbg             = [lbg; 0];
-            ubg             = [ubg; 0];    
-            % Ankle, right
-            Ftkj_ankle_r    = FTkj(mai(3).mus.r',1);
-            Tkj_ankle_r     = f_T3(MAkj_ankle_r,Ftkj_ankle_r);
-            g               = {g{:},(Tkj(jointi.ankle.r,1)-(Tkj_ankle_r))};
-            lbg             = [lbg; 0];
-            ubg             = [ubg; 0];
-            % Torque-driven joint torque for the trunk
-            % Trunk
-            g       = {g{:},Tkj(jointi.trunk.ext,1)./scaling.BackTau-a_bkj{j}};
-            lbg     = [lbg; 0];
-            ubg     = [ubg; 0];  
-            % Contraction dynamics (implicit formulation)
-            g               = {g{:},Hilldiffkj};
-            lbg             = [lbg; zeros(NMuscle,1)];
-            ubg             = [ubg; zeros(NMuscle,1)];  
-            
-        end % End loop over collocation points    
-                
+                    W.u*B(j+1)      *(sumsqr(dFTtildek))*h);  
+            end                
+        end            
         % Call external function
         if deri == 2
             [Tk] = F(Xk_nsc,Ak_nsc); 
@@ -716,8 +602,8 @@ if solveProblem
         % Activation dynamics (implicit formulation)
         tact = 0.015;
         tdeact = 0.06;
-        act1 = vAk_nsc + ak./(ones(size(ak,1),1)*tdeact);
-        act2 = vAk_nsc + ak./(ones(size(ak,1),1)*tact);
+        act1 = vAk*scaling.vA + ak./(ones(size(ak,1),1)*tdeact);
+        act2 = vAk*scaling.vA + ak./(ones(size(ak,1),1)*tact);
         % act1
         g               = {g{:},act1};
         lbg             = [lbg; zeros(NMuscle,1)];
@@ -945,11 +831,10 @@ if analyseResults
     % All optimized design variables are saved in a single column vector      
     % Number of design variables    
     NControls = NMuscle+NMuscle+nq.all+nq.trunk;
-    NLiftVariables = NMuscle+nq.all;
     NStates = NMuscle+NMuscle+2*nq.all+nq.trunk;
     NParameters = 1;
     % In the loop
-    Nwl = NControls+d*(NStates)+d*NLiftVariables+NStates;
+    Nwl = NControls+d*(NStates)+NStates;
     % In total
     Nw = NParameters+NStates+N*Nwl;
     % Before the variable corresponding to the first collocation point
@@ -1048,28 +933,6 @@ if analyseResults
         a_b_opt_ext(4:(d+1):end,nmusi) = w_opt(Nwm+d*NMuscle+...
             d*NMuscle+d*2*nq.all+nq.trunk+nq.trunk+nmusi:Nwl:Nw);
     end   
-    % Time derivative of muscle-tendon forces
-    dFTtilde_opt_ext=zeros(N*(d+1),NMuscle);
-    dFTtilde_opt_ext(1:(d+1):end,:)= dFTtilde_opt;
-    for nmusi=1:NMuscle
-        dFTtilde_opt_ext(2:(d+1):end,nmusi) = w_opt(Nwm+d*NMuscle+...
-            d*NMuscle+d*2*nq.all+d*nq.trunk+nmusi:Nwl:Nw);
-        dFTtilde_opt_ext(3:(d+1):end,nmusi) = w_opt(Nwm+d*NMuscle+...
-            d*NMuscle+d*2*nq.all+d*nq.trunk+NMuscle+nmusi:Nwl:Nw);
-        dFTtilde_opt_ext(4:(d+1):end,nmusi) =  w_opt(Nwm+d*NMuscle+...
-            d*NMuscle+d*2*nq.all+d*nq.trunk+NMuscle+NMuscle+nmusi:Nwl:Nw);
-    end
-    % Time derivative of Qdots
-    qdotdot_opt_ext=zeros(N*(d+1),nq.all);
-    qdotdot_opt_ext(1:(d+1):end,:)= qdotdot_opt;
-    for nmusi=1:nq.all
-        qdotdot_opt_ext(2:(d+1):end,nmusi) = w_opt(Nwm+d*NMuscle+...
-            d*NMuscle+d*2*nq.all+d*nq.trunk+d*NMuscle+nmusi:Nwl:Nw);
-        qdotdot_opt_ext(3:(d+1):end,nmusi) = w_opt(Nwm+d*NMuscle+...
-            d*NMuscle+d*2*nq.all+d*nq.trunk+d*NMuscle+nq.all+nmusi:Nwl:Nw);
-        qdotdot_opt_ext(4:(d+1):end,nmusi) =  w_opt(Nwm+d*NMuscle+...
-            d*NMuscle+d*2*nq.all+d*nq.trunk+d*NMuscle+nq.all+nq.all+nmusi:Nwl:Nw);
-    end
     
     %% Unscale results
     % States at mesh points
@@ -1125,21 +988,6 @@ if analyseResults
     e_b_opt_unsc = e_b_opt.*repmat(scaling.e_b,size(e_b_opt,1),...
         size(e_b_opt,2));    
     
-    % States at mesh points
-    % Qs
-    q_opt_ext_unsc.rad = q_opt_ext.*repmat(scaling.Qs,size(q_opt_ext,1),1);   
-    % Qdots
-    qdot_opt_ext_unsc.rad = q_dot_opt_ext.*repmat(scaling.Qdots,size(q_dot_opt_ext,1),1); 
-    
-    
-    % Controls at collocation points
-    % Time derivative of Qdots
-    qdotdot_opt_ext_unsc.rad = ...
-        qdotdot_opt_ext.*repmat(scaling.Qdotdots,size(qdotdot_opt_ext,1),1);
-    % Convert in degrees
-    qdotdot_opt_ext_unsc.deg = qdotdot_opt_ext_unsc.rad;
-    qdotdot_opt_ext_unsc.deg(:,dof_roti) = qdotdot_opt_ext_unsc.deg(:,dof_roti).*180/pi;
-    
     %% Time grid    
     % Mesh points
     tgrid = linspace(0,tf_opt,N+1);
@@ -1170,25 +1018,6 @@ if analyseResults
         max(max(abs(out_res_opt(:,jointi.trunk.ext)/scaling.BackTau - ...
             (a_b_opt_unsc))));
     if assertBackTmax > 1*10^(-tol_ipopt)
-        disp('Issue when reconstructing residual forces')
-    end 
-    
-    %% Joint torques and ground reaction forces at optimal solution
-    Xk_Qs_Qdots_opt_ext             = zeros(N+d*N,2*nq.all);
-    Xk_Qs_Qdots_opt_ext(:,1:2:end)  = q_opt_ext_unsc.rad(1:end-1,:);
-    Xk_Qs_Qdots_opt_ext(:,2:2:end)  = qdot_opt_ext_unsc.rad(1:end-1,:);
-    Xk_Qdotdots_opt_ext             = qdotdot_opt_ext_unsc.rad;
-    out_res_opt_ext = zeros(N+d*N,nq.all+nGRF);
-    for i = 1:N+d*N
-        [res_ext] = F1([Xk_Qs_Qdots_opt_ext(i,:)';Xk_Qdotdots_opt_ext(i,:)']);
-        out_res_opt_ext(i,:) = full(res_ext);    
-    end
-    GRF_opt_unsc_ext = out_res_opt_ext(:,GRFi.all);
-    % assertBackTmax should be 0
-    assertBackTmax_ext = ...
-        max(max(abs(out_res_opt_ext(:,jointi.trunk.ext)/scaling.BackTau - ...
-            (a_b_opt_ext(1:end-1,:)))));
-    if assertBackTmax_ext > 1*10^(-tol_ipopt)
         disp('Issue when reconstructing residual forces')
     end 
        
@@ -1448,8 +1277,8 @@ if analyseResults
     %% Save results  
     if saveResults
         hess_names = {'Approximated','Exact'};
-        if (exist([pathresults,'/',namescript,'/Results_2D.mat'],'file')==2) 
-            load([pathresults,'/',namescript,'/Results_2D.mat']);
+        if (exist([pathresults,'/',namescript,'/Results_2D_original.mat'],'file')==2) 
+            load([pathresults,'/',namescript,'/Results_2D_original.mat']);
         else
             Results_2D.(['Derivative_',setup.derivatives]). ...
                 (['Hessian_',hess_names{hessi}]). ...
@@ -1514,7 +1343,7 @@ if analyseResults
             (['MetabolicEnergyRate_',num2str(exp_E)]). ...
             (['InitialGuess_',num2str(IGi)]).stats = stats;
         % Save data
-        save([pathresults,'/',namescript,'/Results_2D.mat'],'Results_2D');
+        save([pathresults,'/',namescript,'/Results_2D_original.mat'],'Results_2D');
     end
 end
 end
