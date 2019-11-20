@@ -28,50 +28,8 @@
 settings = [
     % A. Impact of the derivative supplier
     % Recorder - Approximated Hessian - mumps
-    1, 1, 1, 0, 1; % 1
-    1, 1, 1, 0, 2; % 2
-    1, 1, 1, 0, 3; % 3
-    % ADOL-C - Approximated Hessian - mumps
-    2, 1, 1, 0, 1; % 4
-    2, 1, 1, 0, 2; % 5
-    2, 1, 1, 0, 3; % 6
-    % FD - Approximated Hessian - mumps
-    3, 1, 1, 0, 1; % 7
-    3, 1, 1, 0, 2; % 8
-    3, 1, 1, 0, 3; % 9
-    % B. Impact of the linear solver
-    % Recorder - Approximated Hessian - ma27    
-    1, 1, 2, 0, 1; % 10
-    1, 1, 2, 0, 2; % 11
-    1, 1, 2, 0, 3; % 12
-    % Recorder - Approximated Hessian - ma57
-    1, 1, 3, 0, 1; % 13
-    1, 1, 3, 0, 2; % 14
-    1, 1, 3, 0, 3; % 15
-    % Recorder - Approximated Hessian - ma77
-    1, 1, 4, 0, 1; % 16
-    1, 1, 4, 0, 2; % 17
-    1, 1, 4, 0, 3; % 18
-    % Recorder - Approximated Hessian - ma86
-    1, 1, 5, 0, 1; % 19
-    1, 1, 5, 0, 2; % 20
-    1, 1, 5, 0, 3; % 21
-    % Recorder - Approximated Hessian - ma97
-    1, 1, 6, 0, 1; % 22
-    1, 1, 6, 0, 2; % 23
-    1, 1, 6, 0, 3; % 24
-    % C. Impact of the Hessian calculation scheme
-    % Recorder - Exact Hessian - ma86
-    1, 2, 5, 0, 1; % 25
-    1, 2, 5, 0, 2; % 26
-    1, 2, 5, 0, 3; % 27
-    % Recorder - Exact Hessian - ma97
-    1, 2, 6, 0, 1; % 28
-    1, 2, 6, 0, 2; % 29
-    1, 2, 6, 0, 3; % 30
-    % D. Impact of having metabolic energy rate in cost function
-    % Recorder - Approximated Hessian - mumps
-    1, 1, 1, 1, 2; % 31
-    % FD - Approximated Hessian - mumps
-    3, 1, 1, 1, 2; % 32
+    1, 1, 1, 0, 2, 50; % 1
+    1, 1, 1, 0, 2, 100; % 2
+    1, 1, 1, 0, 2, 150; % 3
+    1, 1, 1, 0, 2, 200; % 3
     ];

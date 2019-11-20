@@ -10,8 +10,8 @@ clc
 
 %% User settings
 % Select trials, for example
-ww_2D  = [2,2];
-ww_2Di  = [1,2];
+ww_2D  = [1,2,3,4];
+ww_2Di  = [1,1,1,1];
 
 %% Other settings
 % Load pre-defined settings
