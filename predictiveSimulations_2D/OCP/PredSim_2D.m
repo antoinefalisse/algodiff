@@ -570,8 +570,8 @@ if solveProblem
             lbg         = [lbg; 0];
             ubg         = [ubg; 0];
             % Activation dynamics (implicit formulation)
-            act1 = vAk_nsc + ak./(ones(size(akj{j},1),1)*tdeact);
-            act2 = vAk_nsc + ak./(ones(size(akj{j},1),1)*tact);
+            act1 = vAk_nsc + ak./(ones(size(ak,1),1)*tdeact);
+            act2 = vAk_nsc + ak./(ones(size(ak,1),1)*tact);
             % act1
             g               = {g{:},act1};
             lbg             = [lbg; zeros(NMuscle,1)];
