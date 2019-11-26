@@ -1,5 +1,4 @@
 # Add any directories, files, or patterns you don't want to be tracked by version control
 
-**/predictiveSimulations_2D/Results/PredSim_2D/*
+**/predictiveSimulations_2D/Results/*
 !**/predictiveSimulations_2D/Results/PredSim_2D/Results_2D_Paper.mat
-**/predictiveSimulations_2D/Results/PredSim_2D_original
