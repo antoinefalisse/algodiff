@@ -330,11 +330,18 @@ if solveProblem
     ubg = []; % upper bounds for constraints
     % Define static parameters
     % Final time
-    tf              = MX.sym('tf',1);
-    w               = [w {tf}];
-    lbw             = [lbw; bounds.tf.lower];
-    ubw             = [ubw; bounds.tf.upper];
-    w0              = [w0;  guess.tf];       
+%     t0              = MX.sym('t0',1);
+%     w               = [w {t0}];
+%     lbw             = [lbw; bounds.tf.lower];
+%     ubw             = [ubw; bounds.tf.upper];
+%     w0              = [w0;  guess.tf];      
+    for k=0:N-1
+        tf{k+1,1} = MX.sym(['X_' num2str(k+1)], 1);
+        w               = {w{:}, tf{k+1,1}};
+        lbw             = [lbw; bounds.tf.lower];
+        ubw             = [ubw; bounds.tf.upper];
+        w0              = [w0;  guess.tf]; 
+    end     
     % Define states at first mesh point
     % Muscle activations
     a0              = MX.sym('a0',NMuscle);
@@ -366,6 +373,7 @@ if solveProblem
         Xk{k+1,1} = MX.sym(['X_' num2str(k+1)], 2*nq.all);
     end 
     % "Lift" initial conditions
+%     tfk         = t0;
     ak          = a0;
     FTtildek    = FTtilde0;
     Xk{1,1}     = X0;
@@ -375,12 +383,18 @@ if solveProblem
         scaling.QsQdots(2*jointi.pelvis.tx-1); % initial position pelvis_tx    
     pelvis_txf = Xk{N+1,1}(2*jointi.pelvis.tx-1,1).*...
         scaling.QsQdots(2*jointi.pelvis.tx-1); % final position pelvis_tx 
-    dist_trav_tot = pelvis_txf-pelvis_tx0; % distance traveled 
-    % Time step
-    h = tf/N;
+    dist_trav_tot = pelvis_txf-pelvis_tx0; % distance traveled    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Loop over mesh points
-    for k=0:N-1
+    for k=0:N-1        
+        % Time step
+        tfk = tf{k+1,1};
+        if k ~= N-1  
+            g               = {g{:}, tf{k+2,1}-tfk};
+            lbg             = [lbg; 0];
+            ubg             = [ubg; 0];
+        end
+        h = tfk/N;
         % Define controls at mesh point (piecewise-constant in interval) 
         % Time derivative of muscle activations (states)
         vAk                 = MX.sym(['vA_' num2str(k)], NMuscle);
@@ -679,7 +693,7 @@ if solveProblem
             w               = {w{:}, a_bk};
             lbw             = [lbw; bounds.a_b.lower'];
             ubw             = [ubw; bounds.a_b.upper'];
-            w0              = [w0;  guess.a_b(k+2,:)'];
+            w0              = [w0;  guess.a_b(k+2,:)'];            
         else % Periodicty 
             % Muscle activations
             ak              = MX.sym(['a_' num2str(k+1)], NMuscle);
@@ -753,7 +767,7 @@ if solveProblem
     lbg = [lbg; zeros(nq.trunk,1)];
     ubg = [ubg; zeros(nq.trunk,1)];
     % Average speed
-    vel_aver_tot = dist_trav_tot/tf; 
+    vel_aver_tot = dist_trav_tot/tfk; 
     g   = {g{:}, vel_aver_tot - v_tgt};
     lbg = [lbg; 0];
     ubg = [ubg; 0];  
@@ -786,6 +800,18 @@ if solveProblem
     if assert_bwu 
         disp('WARNING: initial guess (larger than upper bounds)'); 
     end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     % Plot Jacobian / Hessian
+%     import casadi.*
+%     % Jacobian
+%     jac = jacobian(vertcat(g{:}),vertcat(w{:}));
+%     spy(sparse(DM.ones(jac.sparsity())));
+%     % Hessian
+%     gtemp = vertcat(g{:});
+%     lam = MX.sym('lam', gtemp.sparsity());
+%     L = J + dot(lam, gtemp);
+%     Hess = hessian(L, vertcat(w{:}));
+%     spy(sparse(DM.ones(Hess.sparsity())));
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Create an NLP solver
     prob = struct('f', J, 'x', vertcat(w{:}), 'g', vertcat(g{:}));
@@ -874,7 +900,7 @@ if analyseResults
     NControls = NMuscle+nq.trunk;
     NSlackControls = NMuscle+nq.all;
     NStates = NMuscle+NMuscle+2*nq.all+nq.trunk;
-    NParameters = 1;
+    NParameters = N;
     % In the loop
     Nwl = NControls+d*(NStates)+d*NSlackControls+NStates;
     % In total
@@ -886,7 +912,8 @@ if analyseResults
     NwSCCP = NParameters+NStates+NControls+d*NStates;    
     % Here we extract the results and re-organize them for analysis 
     % Static parameters
-    tf_opt  = w_opt(1:NParameters);
+    tf_opt_all  = w_opt(1:NParameters);
+    tf_opt = tf_opt_all(1);
     % States at mesh points
     % Muscle activations and muscle-tendon forces
     a_opt = zeros(N+1,NMuscle);

@@ -27,8 +27,8 @@ close all;
 % num_set(5): set to 1 to visualize guess-bounds 
 % num_set(6): set to 1 to write .mot file
 
-% num_set = [1,0,0,1,0,1]; % This configuration solves the problem
-num_set = [0,1,1,1,0,1]; % This configuration analyzes the results
+num_set = [1,0,0,1,0,1]; % This configuration solves the problem
+% num_set = [0,1,1,1,0,1]; % This configuration analyzes the results
 
 % The variable settings in the following section (loaded through
 % settings_PredSim_2D) will set some parameters of the optimal control problems.
@@ -786,6 +786,18 @@ if solveProblem
     if assert_bwu 
         disp('WARNING: initial guess (larger than upper bounds)'); 
     end
+     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     % Plot Jacobian / Hessian
+%     import casadi.*
+%     % Jacobian
+%     jac = jacobian(vertcat(g{:}),vertcat(w{:}));
+%     spy(sparse(DM.ones(jac.sparsity())));
+%     % Hessian
+%     gtemp = vertcat(g{:});
+%     lam = MX.sym('lam', gtemp.sparsity());
+%     L = J + dot(lam, gtemp);
+%     Hess = hessian(L, vertcat(w{:}));
+%     spy(sparse(DM.ones(Hess.sparsity())));
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Create an NLP solver
     prob = struct('f', J, 'x', vertcat(w{:}), 'g', vertcat(g{:}));
