@@ -371,193 +371,218 @@ if solveProblem
     opti.subject_to(bounds.Qdotdots.lower'*ones(1,d*N) < A_col < bounds.Qdotdots.upper'*ones(1,d*N));
     opti.set_initial(A_col, guess.Qdotdots_col');          
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Unscale variables
-    X_nsc = X.*(scaling.QsQdots'*ones(1,N+1));
-    X_col_nsc = X_col.*(scaling.QsQdots'*ones(1,d*N));
-    FTtilde_nsc = FTtilde.*(scaling.FTtilde'*ones(1,N+1));
-    FTtilde_col_nsc = FTtilde_col.*(scaling.FTtilde'*ones(1,d*N));
-    dFTtilde_col_nsc = dFTtilde_col.*scaling.dFTtilde;
-    vA_nsc = vA.*scaling.vA;
-    A_col_nsc = A_col.*(scaling.Qdotdots'*ones(1,d*N));    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Provide expression for the distance traveled
-    dist_trav_tot = X_nsc((2*jointi.pelvis.tx-1),end) - ...
-        X_nsc((2*jointi.pelvis.tx-1),1); 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Parallel formulation
+    % Define CasADi variables for static parameters
+    tfk = MX.sym('tfk');
+    % Define CasADi variables for states
+    ak = MX.sym('ak',NMuscle);
+    aj = MX.sym('akmesh',NMuscle,d);
+    akj = [ak aj];
+    FTtildek = MX.sym('FTtildek',NMuscle); 
+    FTtildej = MX.sym('FTtildej',NMuscle,d);
+    FTtildekj = [FTtildek FTtildej];
+    Xk = MX.sym('Xk_nsc',2*nq.all);
+    Xj = MX.sym('Xj_nsc',2*nq.all,d);
+    Xkj = [Xk Xj];
+    a_bk = MX.sym('a_bk',nq.trunk);
+    a_bj = MX.sym('a_bj',nq.trunk,d);
+    a_bkj = [a_bk a_bj];
+    % Define CasADi variables for controls
+    vAk = MX.sym('vAk',NMuscle);
+    e_bk = MX.sym('e_bk',nq.trunk);
+    % Define CasADi variables for "slack" controls
+    dFTtildej = MX.sym('dFTtildej',NMuscle,d);
+    Aj = MX.sym('Aj',nq.all,d);  
     J = 0; % Initialize cost function
+    eq_constr = {}; % Initialize equality constraint vector
+    ineq_constr1 = {}; % Initialize inequality constraint vector 1
+    ineq_constr2 = {}; % Initialize inequality constraint vector 2
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Time step
+    hk = tfk/N;                
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    for j=1:d % Loop over collocation points    
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Unscale variables        
+        Xkj_nsc = Xkj.*(scaling.QsQdots'*ones(1,size(Xkj,2)));
+        FTtildekj_nsc = FTtildekj.*(scaling.FTtilde'*ones(1,size(FTtildekj,2)));
+        dFTtildej_nsc = dFTtildej.*scaling.dFTtilde;
+        Aj_nsc = Aj.*(scaling.Qdotdots'*ones(1,size(Aj,2)));  
+        vAk_nsc = vAk.*scaling.vA;              
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Get muscle-tendon lengths, velocities, and moment arms
+        % Left leg
+        qinj_l = [Xkj_nsc(jointi.hip.l*2-1,j+1),...
+            Xkj_nsc(jointi.knee.l*2-1,j+1),...
+            Xkj_nsc(jointi.ankle.l*2-1,j+1)];  
+        qdotinj_l = [Xkj_nsc(jointi.hip.l*2,j+1),...
+            Xkj_nsc(jointi.knee.l*2,j+1),Xkj_nsc(jointi.ankle.l*2,j+1)];  
+        [lMTj_l,vMTj_l,MAj_l] = f_lMT_vMT_dM(qinj_l,qdotinj_l);    
+        MAj_hip_l    =  MAj_l(mai(1).mus.l',1);
+        MAj_knee_l   =  MAj_l(mai(2).mus.l',2);
+        MAj_ankle_l  =  MAj_l(mai(3).mus.l',3);    
+        % Right leg
+        qinj_r = [Xkj_nsc(jointi.hip.r*2-1,j+1),...
+            Xkj_nsc(jointi.knee.r*2-1,j+1),...
+            Xkj_nsc(jointi.ankle.r*2-1,j+1)];  
+        qdotinj_r = [Xkj_nsc(jointi.hip.r*2,j+1),...
+            Xkj_nsc(jointi.knee.r*2,j+1), Xkj_nsc(jointi.ankle.r*2,j+1)];      
+        [lMTj_r,vMTj_r,MAj_r] = f_lMT_vMT_dM(qinj_r,qdotinj_r);  
+        % Here we take the indices from left since the vector is 1:NMuscle/2
+        MAj_hip_r    = MAj_r(mai(1).mus.l',1);
+        MAj_knee_r   = MAj_r(mai(2).mus.l',2);
+        MAj_ankle_r  = MAj_r(mai(3).mus.l',3);
+        % Both legs
+        lMTj_lr     = [lMTj_l;lMTj_r];
+        vMTj_lr     = [vMTj_l;vMTj_r]; 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Get muscle-tendon forces and derive Hill-equilibrium
+        [Hilldiffj,FTj,Fcej,Fpassj,Fisoj,~,massMj] = ...
+            f_forceEquilibrium_FtildeState(akj(:,j+1),...
+            FTtildekj_nsc(:,j+1),dFTtildej_nsc(:,j),lMTj_lr,vMTj_lr,...
+            tensions);           
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Get metabolic energy rate if in the cost function   
+        if W.mE ~= 0    
+            % Get muscle fiber lengths
+            [~,lMtildej] = f_FiberLength_TendonForce(...
+                FTtildekj_nsc(:,j+1),lMTj_lr); 
+            % Get muscle fiber velocities
+            [vMj,~] = f_FiberVelocity_TendonForce(FTtildekj_nsc(:,j+1),...
+                dFTtildej_nsc(:,j),lMTj_lr,vMTj_lr);
+            % Get metabolic energy rate
+            [e_totj,~,~,~,~,~] = fgetMetabolicEnergySmooth2004all(...
+                akj(:,j+1),akj(:,j+1),lMtildej,vMj,Fcej,Fpassj,massMj,...
+                pctsts,Fisoj,MTparameters_m(1,:)',body_mass,10);
+        end  
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Collocation            
+        % Expression for the state derivatives at the collocation point
+        xp_nsc          = Xkj_nsc*C(:,j+1);
+        FTtildep_nsc    = FTtildekj_nsc*C(:,j+1);
+        ap              = akj*C(:,j+1);
+        a_bp            = a_bkj*C(:,j+1);
+        % Append collocation equations
+        % Dynamic constraints are scaled using the same scale
+        % factors as was used to scale the states
+        % Activation dynamics (implicit formulation)  
+        eq_constr{end+1} = (hk*vAk_nsc - ap)./scaling.a;
+        % Contraction dynamics (implicit formulation)         
+        eq_constr{end+1} = (hk*dFTtildej_nsc(:,j) - FTtildep_nsc)./scaling.FTtilde';
+        % Skeleton dynamics (implicit formulation)  
+        qdotj_nsc = Xkj_nsc(2:2:end,j+1); % velocity
+        qp_nsc = xp_nsc(1:2:end); % position (state) derivative => velocity
+        eq_constr{end+1} = (hk*qdotj_nsc - qp_nsc)./scaling.QsQdots(1:2:end)';
+        qdotp_nsc = xp_nsc(2:2:end); % velocity (state) derivative => acceleration
+        eq_constr{end+1} = (hk*Aj_nsc(:,j) - qdotp_nsc)./scaling.QsQdots(2:2:end)';
+        % Back activation dynamics (explicit formulation)  
+        dadtj    = f_BackActivationDynamics(e_bk,a_bkj(:,j+1)');
+        eq_constr{end+1} = (hk*dadtj - a_bp)./scaling.a_b;
+        % Add contribution to quadrature function
+        if W.mE == 0
+            J = J + (...
+                W.act*B(j+1)    *(f_sumsqr_exp(akj(:,j+1)',exp_A))*hk + ...
+                W.back*B(j+1)   *(sumsqr(e_bk))*hk +... 
+                W.acc*B(j+1)    *(sumsqr(Aj(:,j)))*hk + ...                          
+                W.u*B(j+1)      *(sumsqr(vAk))*hk + ...
+                W.u*B(j+1)      *(sumsqr(dFTtildej(:,j)))*hk);  
+        elseif W.act == 0
+            J = J + (...
+                W.mE*B(j+1)     *(f_sumsqr_exp(e_totj,exp_E))*hk + ...
+                W.back*B(j+1)   *(sumsqr(e_bk))*hk +... 
+                W.acc*B(j+1)    *(sumsqr(Aj(:,j)))*hk + ...                          
+                W.u*B(j+1)      *(sumsqr(vAk))*hk + ...
+                W.u*B(j+1)      *(sumsqr(dFTtildej(:,j)))*hk);  
+        else
+            J = J + (...
+                W.act*B(j+1)    *(f_sumsqr_exp(akj(:,j+1)',exp_A))*hk + ...
+                W.mE*B(j+1)     *(f_sumsqr_exp(e_totj,exp_E))*hk + ...
+                W.back*B(j+1)   *(sumsqr(e_bk))*hk +... 
+                W.acc*B(j+1)    *(sumsqr(Aj(:,j)))*hk + ...                          
+                W.u*B(j+1)      *(sumsqr(vAk))*hk + ...
+                W.u*B(j+1)      *(sumsqr(dFTtildej(:,j)))*hk);  
+        end  
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Call external function (run inverse dynamics)
+        if deri == 2
+            [Tkj] = F(Xkj_nsc(:,j+1),Aj_nsc(:,j)); 
+        else
+            [Tkj] = F([Xkj_nsc(:,j+1);Aj_nsc(:,j)]);      
+        end
+        % Add path constraints
+        % Null pelvis residuals
+        eq_constr{end+1} = Tkj(jointi.gr_pelvis,1);
+        % Muscle-driven joint torques for the lower limbs and the trunk
+        % Hip flexion, left
+        Ftkj_hip_l  = FTj(mai(1).mus.l',1);
+        Tkj_hip_l   = f_T4(MAj_hip_l,Ftkj_hip_l);
+        eq_constr{end+1} = (Tkj(jointi.hip.l,1)-(Tkj_hip_l));
+        % Hip flexion, right
+        Ftkj_hip_r  = FTj(mai(1).mus.r',1);
+        Tkj_hip_r   = f_T4(MAj_hip_r,Ftkj_hip_r);
+        eq_constr{end+1} = (Tkj(jointi.hip.r,1)-(Tkj_hip_r));
+        % Knee, left
+        Ftkj_knee_l = FTj(mai(2).mus.l',1);
+        Tkj_knee_l  = f_T5(MAj_knee_l,Ftkj_knee_l);
+        eq_constr{end+1} = (Tkj(jointi.knee.l,1)-(Tkj_knee_l));
+        % Knee, right
+        Ftkj_knee_r = FTj(mai(2).mus.r',1);
+        Tkj_knee_r  = f_T5(MAj_knee_r,Ftkj_knee_r);
+        eq_constr{end+1} = (Tkj(jointi.knee.r,1)-(Tkj_knee_r));
+        % Ankle, left
+        Ftkj_ankle_l    = FTj(mai(3).mus.l',1);
+        Tkj_ankle_l     = f_T3(MAj_ankle_l,Ftkj_ankle_l);
+        eq_constr{end+1} = (Tkj(jointi.ankle.l,1)-(Tkj_ankle_l));
+        % Ankle, right
+        Ftkj_ankle_r    = FTj(mai(3).mus.r',1);
+        Tkj_ankle_r     = f_T3(MAj_ankle_r,Ftkj_ankle_r);
+        eq_constr{end+1} = (Tkj(jointi.ankle.r,1)-(Tkj_ankle_r));
+        % Torque-driven joint torque for the trunk
+        % Trunk
+        eq_constr{end+1} = Tkj(jointi.trunk.ext,1)./scaling.BackTau-a_bkj(:,j+1);
+        % Contraction dynamics (implicit formulation)
+        eq_constr{end+1} = Hilldiffj;
+        % Activation dynamics (implicit formulation)
+        act1 = vAk_nsc + akj(:,j+1)./(ones(size(akj(:,j+1),1),1)*tdeact);
+        act2 = vAk_nsc + akj(:,j+1)./(ones(size(akj(:,j+1),1),1)*tact);    
+        ineq_constr1{end+1} = act1;
+        ineq_constr2{end+1} = act2;  
+    end % End loop over collocation points
+    eq_constr = vertcat(eq_constr{:});
+    ineq_constr1 = vertcat(ineq_constr1{:});
+    ineq_constr2 = vertcat(ineq_constr2{:});
+    f_coll = Function('f_coll',{tfk,ak,aj,FTtildek,FTtildej,Xk,Xj,a_bk,a_bj,...
+        vAk,e_bk,dFTtildej,Aj},{eq_constr,ineq_constr1, ineq_constr2, J});
+    f_coll_map = f_coll.map(N,'openmp',8);
+    [coll_eq_constr, coll_ineq_constr1, coll_ineq_constr2, Jall] = ...
+        f_coll_map(tf, a(:,1:end-1), a_col, FTtilde(:,1:end-1), FTtilde_col, ...
+        X(:,1:end-1), X_col, a_b(:,1:end-1), a_b_col, vA, e_b, dFTtilde_col, ...
+        A_col);
+    opti.subject_to(coll_eq_constr == 0);
+    opti.subject_to(coll_ineq_constr1(:) >= 0);
+    opti.subject_to(coll_ineq_constr2(:) <= 1/tact);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Loop over mesh points
     for k=1:N
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Time step
-        h = tf(1,k)/N;
-        if k ~= N
-            % Add equality constraints (final time is constant)
-            opti.subject_to(tf(1,k+1) - tf(1,k) == 0);
-        end   
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Variables within current mesh interval
+        % Static parameters
+        tfk = tf(k);
         % States      
         akj = [a(:,k), a_col(:,(k-1)*d+1:k*d)]; 
-        FTtildekj_nsc = [FTtilde_nsc(:,k), FTtilde_col_nsc(:,(k-1)*d+1:k*d)];
         FTtildekj = [FTtilde(:,k), FTtilde_col(:,(k-1)*d+1:k*d)];
-        Xkj_nsc = [X_nsc(:,k), X_col_nsc(:,(k-1)*d+1:k*d)];
         Xkj = [X(:,k), X_col(:,(k-1)*d+1:k*d)];
         a_bkj = [a_b(:,k), a_b_col(:,(k-1)*d+1:k*d)];
-        % Controls
-        vAk = vA(:,k); vAk_nsc = vA_nsc(:,k);
-        e_bk = e_b(:,k); 
-        % "Slack" controls
-        dFTtildej = dFTtilde_col(:,(k-1)*d+1:k*d); dFTtildej_nsc = dFTtilde_col_nsc(:,(k-1)*d+1:k*d);
-        Aj = A_col(:,(k-1)*d+1:k*d); Aj_nsc = A_col_nsc(:,(k-1)*d+1:k*d);                 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        for j=1:d   
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Get muscle-tendon lengths, velocities, and moment arms
-            % Left leg
-            qinj_l = [Xkj_nsc(jointi.hip.l*2-1,j+1),...
-                Xkj_nsc(jointi.knee.l*2-1,j+1),...
-                Xkj_nsc(jointi.ankle.l*2-1,j+1)];  
-            qdotinj_l = [Xkj_nsc(jointi.hip.l*2,j+1),...
-                Xkj_nsc(jointi.knee.l*2,j+1),Xkj_nsc(jointi.ankle.l*2,j+1)];  
-            [lMTj_l,vMTj_l,MAj_l] = f_lMT_vMT_dM(qinj_l,qdotinj_l);    
-            MAj_hip_l    =  MAj_l(mai(1).mus.l',1);
-            MAj_knee_l   =  MAj_l(mai(2).mus.l',2);
-            MAj_ankle_l  =  MAj_l(mai(3).mus.l',3);    
-            % Right leg
-            qinj_r = [Xkj_nsc(jointi.hip.r*2-1,j+1),...
-                Xkj_nsc(jointi.knee.r*2-1,j+1),...
-                Xkj_nsc(jointi.ankle.r*2-1,j+1)];  
-            qdotinj_r = [Xkj_nsc(jointi.hip.r*2,j+1),...
-                Xkj_nsc(jointi.knee.r*2,j+1), Xkj_nsc(jointi.ankle.r*2,j+1)];      
-            [lMTj_r,vMTj_r,MAj_r] = f_lMT_vMT_dM(qinj_r,qdotinj_r);  
-            % Here we take the indices from left since the vector is 1:NMuscle/2
-            MAj_hip_r    = MAj_r(mai(1).mus.l',1);
-            MAj_knee_r   = MAj_r(mai(2).mus.l',2);
-            MAj_ankle_r  = MAj_r(mai(3).mus.l',3);
-            % Both legs
-            lMTj_lr     = [lMTj_l;lMTj_r];
-            vMTj_lr     = [vMTj_l;vMTj_r]; 
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Get muscle-tendon forces and derive Hill-equilibrium
-            [Hilldiffj,FTj,Fcej,Fpassj,Fisoj,~,massMj] = ...
-                f_forceEquilibrium_FtildeState(akj(:,j+1),...
-                FTtildekj_nsc(:,j+1),dFTtildej_nsc(:,j),lMTj_lr,vMTj_lr,...
-                tensions);           
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Get metabolic energy rate if in the cost function   
-            if W.mE ~= 0    
-                % Get muscle fiber lengths
-                [~,lMtildej] = f_FiberLength_TendonForce(...
-                    FTtildekj_nsc(:,j+1),lMTj_lr); 
-                % Get muscle fiber velocities
-                [vMj,~] = f_FiberVelocity_TendonForce(FTtildekj_nsc(:,j+1),...
-                    dFTtildej_nsc(:,j),lMTj_lr,vMTj_lr);
-                % Get metabolic energy rate
-                [e_totj,~,~,~,~,~] = fgetMetabolicEnergySmooth2004all(...
-                    akj(:,j+1),akj(:,j+1),lMtildej,vMj,Fcej,Fpassj,massMj,...
-                    pctsts,Fisoj,MTparameters_m(1,:)',body_mass,10);
-            end  
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Collocation            
-            % Expression for the state derivatives at the collocation point
-            xp_nsc          = Xkj_nsc*C(:,j+1);
-            FTtildep_nsc    = FTtildekj_nsc*C(:,j+1);
-            ap              = akj*C(:,j+1);
-            a_bp            = a_bkj*C(:,j+1);
-            % Append collocation equations
-            % Dynamic constraints are scaled using the same scale
-            % factors as was used to scale the states
-            % Activation dynamics (implicit formulation)  
-            opti.subject_to((h*vAk_nsc - ap)./scaling.a == 0);
-            % Contraction dynamics (implicit formulation)          
-            opti.subject_to((h*dFTtildej_nsc(:,j) - FTtildep_nsc)./scaling.FTtilde' == 0);
-            % Skeleton dynamics (implicit formulation)  
-            qdotj_nsc = Xkj_nsc(2:2:end,j+1); % velocity
-            qp_nsc = xp_nsc(1:2:end); % position (state) derivative => velocity
-            opti.subject_to((h*qdotj_nsc - qp_nsc)./scaling.QsQdots(1:2:end)' == 0)
-            qdotp_nsc = xp_nsc(2:2:end); % velocity (state) derivative => acceleration
-            opti.subject_to((h*Aj_nsc(:,j) - qdotp_nsc)./scaling.QsQdots(2:2:end)' == 0)   
-            % Back activation dynamics (explicit formulation)  
-            dadtj    = f_BackActivationDynamics(e_bk,a_bkj(:,j+1)');
-            opti.subject_to((h*dadtj - a_bp)./scaling.a_b == 0)   
-            % Add contribution to quadrature function
-            if W.mE == 0
-                J = J + 1/(dist_trav_tot)*(...
-                    W.act*B(j+1)    *(f_sumsqr_exp(akj(:,j+1)',exp_A))*h + ...
-                    W.back*B(j+1)   *(sumsqr(e_bk))*h +... 
-                    W.acc*B(j+1)    *(sumsqr(Aj(:,j)))*h + ...                          
-                    W.u*B(j+1)      *(sumsqr(vAk))*h + ...
-                    W.u*B(j+1)      *(sumsqr(dFTtildej(:,j)))*h);  
-            elseif W.act == 0
-                J = J + 1/(dist_trav_tot)*(...
-                    W.mE*B(j+1)     *(f_sumsqr_exp(e_totj,exp_E))*h + ...
-                    W.back*B(j+1)   *(sumsqr(e_bk))*h +... 
-                    W.acc*B(j+1)    *(sumsqr(Aj(:,j)))*h + ...                          
-                    W.u*B(j+1)      *(sumsqr(vAk))*h + ...
-                    W.u*B(j+1)      *(sumsqr(dFTtildej(:,j)))*h);  
-            else
-                J = J + 1/(dist_trav_tot)*(...
-                    W.act*B(j+1)    *(f_sumsqr_exp(akj(:,j+1)',exp_A))*h + ...
-                    W.mE*B(j+1)     *(f_sumsqr_exp(e_totj,exp_E))*h + ...
-                    W.back*B(j+1)   *(sumsqr(e_bk))*h +... 
-                    W.acc*B(j+1)    *(sumsqr(Aj(:,j)))*h + ...                          
-                    W.u*B(j+1)      *(sumsqr(vAk))*h + ...
-                    W.u*B(j+1)      *(sumsqr(dFTtildej(:,j)))*h);  
-            end  
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Call external function (run inverse dynamics)
-            if deri == 2
-                [Tkj] = F(Xkj_nsc(:,j+1),Aj_nsc(:,j)); 
-            else
-                [Tkj] = F([Xkj_nsc(:,j+1);Aj_nsc(:,j)]);      
-            end
-            % Add path constraints
-            % Null pelvis residuals
-            opti.subject_to(Tkj(jointi.gr_pelvis,1) == 0);
-            % Muscle-driven joint torques for the lower limbs and the trunk
-            % Hip flexion, left
-            Ftkj_hip_l  = FTj(mai(1).mus.l',1);
-            Tkj_hip_l   = f_T4(MAj_hip_l,Ftkj_hip_l);
-            opti.subject_to((Tkj(jointi.hip.l,1)-(Tkj_hip_l)) == 0);   
-            % Hip flexion, right
-            Ftkj_hip_r  = FTj(mai(1).mus.r',1);
-            Tkj_hip_r   = f_T4(MAj_hip_r,Ftkj_hip_r);
-            opti.subject_to((Tkj(jointi.hip.r,1)-(Tkj_hip_r)) == 0); 
-            % Knee, left
-            Ftkj_knee_l = FTj(mai(2).mus.l',1);
-            Tkj_knee_l  = f_T5(MAj_knee_l,Ftkj_knee_l);
-            opti.subject_to((Tkj(jointi.knee.l,1)-(Tkj_knee_l)) == 0);   
-            % Knee, right
-            Ftkj_knee_r = FTj(mai(2).mus.r',1);
-            Tkj_knee_r  = f_T5(MAj_knee_r,Ftkj_knee_r);
-            opti.subject_to((Tkj(jointi.knee.r,1)-(Tkj_knee_r)) == 0);
-            % Ankle, left
-            Ftkj_ankle_l    = FTj(mai(3).mus.l',1);
-            Tkj_ankle_l     = f_T3(MAj_ankle_l,Ftkj_ankle_l);
-            opti.subject_to((Tkj(jointi.ankle.l,1)-(Tkj_ankle_l)) == 0);  
-            % Ankle, right
-            Ftkj_ankle_r    = FTj(mai(3).mus.r',1);
-            Tkj_ankle_r     = f_T3(MAj_ankle_r,Ftkj_ankle_r);
-            opti.subject_to((Tkj(jointi.ankle.r,1)-(Tkj_ankle_r)) == 0);
-            % Torque-driven joint torque for the trunk
-            % Trunk
-            opti.subject_to(Tkj(jointi.trunk.ext,1)./scaling.BackTau-a_bkj(:,j+1) == 0); 
-            % Contraction dynamics (implicit formulation)
-            opti.subject_to(Hilldiffj == 0);             
-            % Activation dynamics (implicit formulation)
-            act1 = vAk_nsc + akj(:,j+1)./(ones(size(akj(:,j+1),1),1)*tdeact);
-            act2 = vAk_nsc + akj(:,j+1)./(ones(size(akj(:,j+1),1),1)*tact);
-            opti.subject_to(act1 >= 0);
-            opti.subject_to(act2 <= 1/tact);              
-        end % End loop over collocation points
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add equality constraints (next interval starts with end values of 
         % states from previous interval)
         opti.subject_to(a(:,k+1) == akj*D);
         opti.subject_to(FTtilde(:,k+1) == FTtildekj*D); % scaled
         opti.subject_to(X(:,k+1) == Xkj*D); % scaled
-        opti.subject_to(a_b(:,k+1) == a_bkj*D);   
-    end % End loop over mesh points
+        opti.subject_to(a_b(:,k+1) == a_bkj*D);
+        if k ~= N
+            % Add equality constraints (final time is constant)
+            opti.subject_to(tf(k+1) - tfk == 0);
+        end
+    end % End loop over mesh points  
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Additional path constraints
     % Periodicity of the states
@@ -581,8 +606,15 @@ if solveProblem
     % Back activations
     opti.subject_to(a_b(:,end) - a_b(:,1) == 0); 
     % Average speed
+    % Provide expression for the distance traveled
+    X_nsc = X.*(scaling.QsQdots'*ones(1,N+1));
+    dist_trav_tot = X_nsc((2*jointi.pelvis.tx-1),end) - ...
+        X_nsc((2*jointi.pelvis.tx-1),1);
     vel_aver_tot = dist_trav_tot/tf(1,1); 
     opti.subject_to(vel_aver_tot - v_tgt == 0);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+    % Scale cost function      
+    Jall_sc = sum(Jall)/dist_trav_tot;
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %     % Plot Jacobian / Hessian
 %     import casadi.*
@@ -597,7 +629,7 @@ if solveProblem
 %     spy(sparse(DM.ones(Hess.sparsity())));
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Create an NLP solver
-    opti.minimize(J);
+    opti.minimize(Jall_sc);
     % Hessian approximation
     if hessi == 1
         options.ipopt.hessian_approximation = 'limited-memory';   
