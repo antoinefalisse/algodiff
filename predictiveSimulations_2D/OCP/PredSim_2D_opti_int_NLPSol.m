@@ -27,8 +27,8 @@ close all;
 % num_set(5): set to 1 to visualize guess-bounds 
 % num_set(6): set to 1 to write .mot file
 
-num_set = [1,1,1,1,0,1]; % This configuration solves the problem
-% num_set = [0,1,1,1,0,1]; % This configuration analyzes the results
+% num_set = [1,1,1,1,0,1]; % This configuration solves the problem
+num_set = [0,1,1,1,0,1]; % This configuration analyzes the results
 
 % The variable settings in the following section (loaded through
 % settings_PredSim_2D) will set some parameters of the optimal control problems.
@@ -615,7 +615,6 @@ if solveProblem
                 'enable_reverse',false,'print_in',false,...
                 'fd_method','forward');
     end
-    opti.solver('ipopt', options); 
     % Create and save diary
     p = mfilename('fullpath');
     [~,namescript,~] = fileparts(p);
@@ -628,25 +627,10 @@ if solveProblem
     end 
     diary([pathresults,'/',namescript,'/D',savename]);  
     % Solve problem 
-    sol = opti.solve();
+    % Opti does not use bounds on variables but constraints. This function
+    % adjusts for that.
+    [w_opt,stats] = solve_NLPSOL(opti,options);    
     diary off
-    % Extract results
-    % Extract results 
-    w_opt.tf_opt = sol.value(tf);
-    w_opt.a_opt = sol.value(a)';
-    w_opt.a_col_opt = sol.value(a_col)';
-    w_opt.FTtilde_opt = sol.value(FTtilde)';
-    w_opt.FTtilde_col_opt = sol.value(FTtilde_col)';
-    w_opt.X_opt = sol.value(X)';
-    w_opt.X_col_opt = sol.value(X_col)';
-    w_opt.a_b_opt = sol.value(a_b)';
-    w_opt.a_b_col_opt = sol.value(a_b_col)';
-    w_opt.vA_opt = sol.value(vA)';
-    w_opt.dFTtilde_opt = sol.value(dFTtilde_col)';
-    w_opt.qdotdot_opt = sol.value(A_col)';
-    w_opt.e_b_opt = sol.value(e_b)'; 
-    % Extract stats
-    stats = sol.stats();
     % Create setup
     setup.tolerance.ipopt = tol_ipopt;
     setup.bounds = bounds;
@@ -669,19 +653,33 @@ if analyseResults
         load([pathresults,'/',namescript,'/w',savename]);
         load([pathresults,'/',namescript,'/stats',savename]);
     end
-    tf_opt = w_opt.tf_opt;
-    a_opt = w_opt.a_opt;
-    a_col_opt = w_opt.a_col_opt;
-    FTtilde_opt = w_opt.FTtilde_opt;
-    FTtilde_col_opt = w_opt.FTtilde_col_opt;
-    X_opt = w_opt.X_opt;
-    X_col_opt = w_opt.X_col_opt;
-    a_b_opt = w_opt.a_b_opt;
-    a_b_col_opt = w_opt.a_b_col_opt;
-    vA_opt = w_opt.vA_opt;
-    dFTtilde_opt = w_opt.dFTtilde_opt;
-    qdotdot_opt = w_opt.qdotdot_opt;
-    e_b_opt = w_opt.e_b_opt;
+    NParameters = 1;    
+    tf_opt = w_opt(1:NParameters);
+    starti = NParameters+1;
+    a_opt = reshape(w_opt(starti:starti+NMuscle*(N+1)-1),NMuscle,N+1)';
+    starti = starti + NMuscle*(N+1);
+    a_col_opt = reshape(w_opt(starti:starti+NMuscle*(d*N)-1),NMuscle,d*N)';
+    starti = starti + NMuscle*(d*N);
+    FTtilde_opt = reshape(w_opt(starti:starti+NMuscle*(N+1)-1),NMuscle,N+1)';
+    starti = starti + NMuscle*(N+1);
+    FTtilde_col_opt = reshape(w_opt(starti:starti+NMuscle*(d*N)-1),NMuscle,d*N)';
+    starti = starti + NMuscle*(d*N);
+    X_opt = reshape(w_opt(starti:starti+2*nq.all*(N+1)-1),2*nq.all,N+1)';
+    starti = starti + 2*nq.all*(N+1);
+    X_col_opt = reshape(w_opt(starti:starti+2*nq.all*(d*N)-1),2*nq.all,d*N)';
+    starti = starti + 2*nq.all*(d*N);
+    a_b_opt = reshape(w_opt(starti:starti+nq.trunk*(N+1)-1),nq.trunk,N+1)';
+    starti = starti + nq.trunk*(N+1);
+    a_b_col_opt = reshape(w_opt(starti:starti+nq.trunk*(d*N)-1),nq.trunk,d*N)';
+    starti = starti + nq.trunk*(d*N);
+    vA_opt = reshape(w_opt(starti:starti+NMuscle*N-1),NMuscle,N)';
+    starti = starti + NMuscle*N;
+    e_b_opt = reshape(w_opt(starti:starti+nq.trunk*N-1),nq.trunk,N)';
+    starti = starti + nq.trunk*N;   
+    dFTtilde_col_opt = reshape(w_opt(starti:starti+NMuscle*(d*N)-1),NMuscle,d*N)';
+    starti = starti + NMuscle*(d*N);
+    qdotdot_col_opt = reshape(w_opt(starti:starti+nq.all*(d*N)-1),nq.all,(d*N))';
+    starti = starti + nq.all*(d*N);
     % Combine results at mesh and collocation points
     a_mesh_col_opt=zeros(N*(d+1)+1,NMuscle);
     a_mesh_col_opt(1:(d+1):end,:)= a_opt;
@@ -699,13 +697,12 @@ if analyseResults
         X_mesh_col_opt(rangei,:) = X_col_opt(rangebi,:);
         a_b_mesh_col_opt(rangei,:) = a_b_col_opt(rangebi,:);
     end
+    q_mesh_col_opt = X_mesh_col_opt(:,1:2:end);
+    qdot_mesh_col_opt = X_mesh_col_opt(:,2:2:end); 
     q_opt = X_opt(:,1:2:end);
     qdot_opt = X_opt(:,2:2:end);
     q_col_opt = X_col_opt(:,1:2:end);
-    qdot_col_opt = X_col_opt(:,2:2:end);
-    q_mesh_col_opt = X_mesh_col_opt(:,1:2:end);
-    qdot_mesh_col_opt = X_mesh_col_opt(:,2:2:end); 
-    
+    qdot_col_opt = X_col_opt(:,2:2:end);        
     if deri == 1
         setup.derivatives = 'AD_Recorder'; % Algorithmic differentiation    
     elseif deri == 2
@@ -761,14 +758,14 @@ if analyseResults
         qdot_col_opt.*repmat(scaling.Qdots,size(qdot_col_opt,1),1);
     % Time derivative of Qdots
     qdotdot_col_opt_unsc.rad = ...
-        qdotdot_opt.*repmat(scaling.Qdotdots,size(qdotdot_opt,1),1);
+        qdotdot_col_opt.*repmat(scaling.Qdotdots,size(qdotdot_col_opt,1),1);
     % Convert in degrees
     qdotdot_col_opt_unsc.deg = qdotdot_col_opt_unsc.rad;
     qdotdot_col_opt_unsc.deg(:,dof_roti) = ...
         qdotdot_col_opt_unsc.deg(:,dof_roti).*180/pi;  
     % Time derivative of muscle-tendon forces
-    dFTtilde_opt_ext_unsc = dFTtilde_opt.*repmat(...
-        scaling.dFTtilde,size(dFTtilde_opt,1),size(dFTtilde_opt,2));    
+    dFTtilde_opt_ext_unsc = dFTtilde_col_opt.*repmat(...
+        scaling.dFTtilde,size(dFTtilde_col_opt,1),size(dFTtilde_col_opt,2));    
     
     %% Time grid    
     % Mesh points
