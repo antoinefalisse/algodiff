@@ -36,7 +36,7 @@ settings_2D
 % Loop over cases
 for k = 1:length(ww_2D)
     if ww_2Di(k) == 1
-        setup.ocp = 'PredSim_2D'; 
+        setup.ocp = 'PredSim_2D_opti_int_NLPSol'; 
         data_2D;
     elseif ww_2Di(k) == 2
         setup.ocp = 'PredSim_2D_original'; 
@@ -174,165 +174,165 @@ end
 set(sp,'Fontsize',sup_fontsize);  
 
 %% Plot ground reaction forces
-GRFref = ExperimentalData.GRFs;
-ylim_GRF = ([-50,50;0 200]);
-NumTicks_GRF = 2;
-figure()
-for i = 1:length(GRF_str)
-    subplot(1,2,i)
-    % Simulation results
-    p = gobjects(1,length(ww_2D));
-    for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(GRFs_opt_2D(k).m,1)-1):100;
-        p(k) = plot(x,GRFs_opt_2D(k).m(:,i),'color',...
-            col(k,:),'linewidth',line_linewidth);
-        hold on;         
-    end    
-    % Experimental data
-    meanPlusSTD = GRFref.(subject).mean(:,i) + 2*GRFref.(subject).std(:,i);    
-    meanMinusSTD = GRFref.(subject).mean(:,i) - 2*GRFref.(subject).std(:,i);   
-    stepGRF = (size(GRFs_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
-    intervalGRF = 1:stepGRF:size(GRFs_opt_2D(k).m,1);
-    sampleGRF = 1:size(GRFs_opt_2D(k).m,1);
-    meanPlusSTD = interp1(intervalGRF,meanPlusSTD,sampleGRF);
-    meanMinusSTD = interp1(intervalGRF,meanMinusSTD,sampleGRF);
-    hold on
-    fill([x fliplr(x)],[meanPlusSTD fliplr(meanMinusSTD)],'k');     
-    alpha(.25);
-    % Title
-    set(gca,'Fontsize',label_fontsize);
-    title(GRF_str{i},'Fontsize',label_fontsize);
-    % Y-axis    
-    ylim([ylim_GRF(i,1) ylim_GRF(i,2)]);
-    L = get(gca,'YLim');
-    if i == 1
-        set(gca,'YTick',[L(1),0,L(2)]);    
-    else
-        set(gca,'YTick',linspace(L(1),L(2),NumTicks_GRF));      
-    end
-    if i == 1
-        ylabel('Force (%BW)','Fontsize',label_fontsize);
-    end
-    % X-axis
-    L = get(gca,'XLim');
-    set(gca,'XTick',linspace(L(1),L(2),NumTicks_GRF))
-    xlabel('Gait cycle (%)','Fontsize',label_fontsize); 
-end
-l = legend(p,legend_case);
-set(l,'Fontsize',16)
-if versionD > 9.4
-    sp = sgtitle('Ground reaction forces');
-else
-    sp = suptitle('Ground reaction forces');
-end
-set(sp,'Fontsize',sup_fontsize);
+% GRFref = ExperimentalData.GRFs;
+% ylim_GRF = ([-50,50;0 200]);
+% NumTicks_GRF = 2;
+% figure()
+% for i = 1:length(GRF_str)
+%     subplot(1,2,i)
+%     % Simulation results
+%     p = gobjects(1,length(ww_2D));
+%     for k = 1:length(ww_2D)
+%         x = 1:(100-1)/(size(GRFs_opt_2D(k).m,1)-1):100;
+%         p(k) = plot(x,GRFs_opt_2D(k).m(:,i),'color',...
+%             col(k,:),'linewidth',line_linewidth);
+%         hold on;         
+%     end    
+%     % Experimental data
+%     meanPlusSTD = GRFref.(subject).mean(:,i) + 2*GRFref.(subject).std(:,i);    
+%     meanMinusSTD = GRFref.(subject).mean(:,i) - 2*GRFref.(subject).std(:,i);   
+%     stepGRF = (size(GRFs_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
+%     intervalGRF = 1:stepGRF:size(GRFs_opt_2D(k).m,1);
+%     sampleGRF = 1:size(GRFs_opt_2D(k).m,1);
+%     meanPlusSTD = interp1(intervalGRF,meanPlusSTD,sampleGRF);
+%     meanMinusSTD = interp1(intervalGRF,meanMinusSTD,sampleGRF);
+%     hold on
+%     fill([x fliplr(x)],[meanPlusSTD fliplr(meanMinusSTD)],'k');     
+%     alpha(.25);
+%     % Title
+%     set(gca,'Fontsize',label_fontsize);
+%     title(GRF_str{i},'Fontsize',label_fontsize);
+%     % Y-axis    
+%     ylim([ylim_GRF(i,1) ylim_GRF(i,2)]);
+%     L = get(gca,'YLim');
+%     if i == 1
+%         set(gca,'YTick',[L(1),0,L(2)]);    
+%     else
+%         set(gca,'YTick',linspace(L(1),L(2),NumTicks_GRF));      
+%     end
+%     if i == 1
+%         ylabel('Force (%BW)','Fontsize',label_fontsize);
+%     end
+%     % X-axis
+%     L = get(gca,'XLim');
+%     set(gca,'XTick',linspace(L(1),L(2),NumTicks_GRF))
+%     xlabel('Gait cycle (%)','Fontsize',label_fontsize); 
+% end
+% l = legend(p,legend_case);
+% set(l,'Fontsize',16)
+% if versionD > 9.4
+%     sp = sgtitle('Ground reaction forces');
+% else
+%     sp = suptitle('Ground reaction forces');
+% end
+% set(sp,'Fontsize',sup_fontsize);
 
 %% Plot joint kinetics
-IDref = ExperimentalData.Torques;
-figure()
-for i = 1:length(idx_Qs)-1
-    subplot(2,2,i)
-    % Simulation results
-    p = gobjects(1,length(ww_2D));
-    for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(Ts_opt_2D(k).m,1)-1):100;
-        p(k) = plot(x,Ts_opt_2D(k).m(:,idx_Qs(i+1))*body_mass,...
-            'color',col(k,:),'linewidth',line_linewidth);
-        hold on;    
-    end
-    % Experimental data
-    idx_jref = strcmp(IDref.(subject).colheaders,joints_ref{i+1});
-    meanPlusSTD = IDref.(subject).mean(:,idx_jref) + ...
-        2*IDref.(subject).std(:,idx_jref);
-    meanMinusSTD = IDref.(subject).mean(:,idx_jref) - ...
-        2*IDref.(subject).std(:,idx_jref);  
-    stepID = (size(Ts_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
-    intervalID = 1:stepID:size(Ts_opt_2D(k).m,1);
-    sampleID = 1:size(Ts_opt_2D(k).m,1);
-    meanPlusSTD = interp1(intervalID,meanPlusSTD,sampleID);
-    meanMinusSTD = interp1(intervalID,meanMinusSTD,sampleID); 
-    hold on
-    fill([x fliplr(x)],[meanPlusSTD fliplr(meanMinusSTD)],'k');
-    alpha(.25);
-    % Title 
-    set(gca,'Fontsize',label_fontsize);   
-    title(joints_tit{idx_Qs(i+1)},'Fontsize',label_fontsize);
-    % Y-axis
-    if i == 1 || i == 3
-        ylabel('Torque (Nm)','Fontsize',label_fontsize);
-    end
-    % X-axis    
-    L = get(gca,'XLim');
-    NumTicks = 2;
-    if i > 2
-        set(gca,'XTick',linspace(L(1),L(2),NumTicks))
-        xlabel('Gait cycle (%)','Fontsize',label_fontsize);
-    else
-        set(gca,'XTick',[]);
-    end
-end 
-l = legend(p,legend_case);
-set(l,'Fontsize',16)
-if versionD > 9.4
-    sp = sgtitle('Joint torques');
-else
-    sp = suptitle('Joint torques');
-end
-set(sp,'Fontsize',sup_fontsize);
+% IDref = ExperimentalData.Torques;
+% figure()
+% for i = 1:length(idx_Qs)-1
+%     subplot(2,2,i)
+%     % Simulation results
+%     p = gobjects(1,length(ww_2D));
+%     for k = 1:length(ww_2D)
+%         x = 1:(100-1)/(size(Ts_opt_2D(k).m,1)-1):100;
+%         p(k) = plot(x,Ts_opt_2D(k).m(:,idx_Qs(i+1))*body_mass,...
+%             'color',col(k,:),'linewidth',line_linewidth);
+%         hold on;    
+%     end
+%     % Experimental data
+%     idx_jref = strcmp(IDref.(subject).colheaders,joints_ref{i+1});
+%     meanPlusSTD = IDref.(subject).mean(:,idx_jref) + ...
+%         2*IDref.(subject).std(:,idx_jref);
+%     meanMinusSTD = IDref.(subject).mean(:,idx_jref) - ...
+%         2*IDref.(subject).std(:,idx_jref);  
+%     stepID = (size(Ts_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
+%     intervalID = 1:stepID:size(Ts_opt_2D(k).m,1);
+%     sampleID = 1:size(Ts_opt_2D(k).m,1);
+%     meanPlusSTD = interp1(intervalID,meanPlusSTD,sampleID);
+%     meanMinusSTD = interp1(intervalID,meanMinusSTD,sampleID); 
+%     hold on
+%     fill([x fliplr(x)],[meanPlusSTD fliplr(meanMinusSTD)],'k');
+%     alpha(.25);
+%     % Title 
+%     set(gca,'Fontsize',label_fontsize);   
+%     title(joints_tit{idx_Qs(i+1)},'Fontsize',label_fontsize);
+%     % Y-axis
+%     if i == 1 || i == 3
+%         ylabel('Torque (Nm)','Fontsize',label_fontsize);
+%     end
+%     % X-axis    
+%     L = get(gca,'XLim');
+%     NumTicks = 2;
+%     if i > 2
+%         set(gca,'XTick',linspace(L(1),L(2),NumTicks))
+%         xlabel('Gait cycle (%)','Fontsize',label_fontsize);
+%     else
+%         set(gca,'XTick',[]);
+%     end
+% end 
+% l = legend(p,legend_case);
+% set(l,'Fontsize',16)
+% if versionD > 9.4
+%     sp = sgtitle('Joint torques');
+% else
+%     sp = suptitle('Joint torques');
+% end
+% set(sp,'Fontsize',sup_fontsize);
 
 %% Plot joint powers
-Pref = ExperimentalData.Powers;
-figure()
-for i = 1:length(idx_Qs)-1
-    subplot(2,2,i)
-    % Simulation results
-    p = gobjects(1,length(ww_2D));
-    for k = 1:length(ww_2D)
-        x = 1:(100-1)/(size(Qdots_opt_2D(k).m,1)-1):100;
-        p(k) = plot(x,Qdots_opt_2D(k).m(:,idx_Qs(i+1)).*pi/180.*...
-            Ts_opt_2D(k).m(:,idx_Qs(i+1))*body_mass,...
-            'color',col(k,:),'linewidth',line_linewidth);
-        hold on;    
-    end
-    % Experimental data
-    idx_jref = strcmp(Pref.(subject).colheaders,joints_ref{i+1});
-    meanPlusSTD = Pref.(subject).mean(:,idx_jref) + ...
-        2*Pref.(subject).std(:,idx_jref);
-    meanMinusSTD = Pref.(subject).mean(:,idx_jref) - ...
-        2*Pref.(subject).std(:,idx_jref);          
-    stepQ = (size(Qdots_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
-    intervalQ = 1:stepQ:size(Qdots_opt_2D(k).m,1);
-    sampleQ = 1:size(Qdots_opt_2D(k).m,1);
-    meanPlusSTD = interp1(intervalQ,meanPlusSTD,sampleQ);
-    meanMinusSTD = interp1(intervalQ,meanMinusSTD,sampleQ);
-    hold on
-    fill([x fliplr(x)],[meanPlusSTD fliplr(meanMinusSTD)],'k');
-    alpha(.25);
-    % Title
-    set(gca,'Fontsize',label_fontsize);   
-    title(joints_tit{idx_Qs(i+1)},'Fontsize',label_fontsize);
-    % Y-axis
-    if i == 1 || i == 3
-        ylabel('Power (W)','Fontsize',label_fontsize);
-    end
-    % X-axis    
-    L = get(gca,'XLim');
-    NumTicks = 2;
-    if i > 2 
-        set(gca,'XTick',linspace(L(1),L(2),NumTicks))
-        xlabel('Gait cycle (%)','Fontsize',label_fontsize);
-    else
-        set(gca,'XTick',[]);
-    end
-end 
-l = legend(p,legend_case);
-set(l,'Fontsize',16)
-if versionD > 9.4
-    sp = sgtitle('Joint powers');
-else
-    sp = suptitle('Joint powers');
-end
-set(sp,'Fontsize',sup_fontsize);
+% Pref = ExperimentalData.Powers;
+% figure()
+% for i = 1:length(idx_Qs)-1
+%     subplot(2,2,i)
+%     % Simulation results
+%     p = gobjects(1,length(ww_2D));
+%     for k = 1:length(ww_2D)
+%         x = 1:(100-1)/(size(Qdots_opt_2D(k).m,1)-1):100;
+%         p(k) = plot(x,Qdots_opt_2D(k).m(:,idx_Qs(i+1)).*pi/180.*...
+%             Ts_opt_2D(k).m(:,idx_Qs(i+1))*body_mass,...
+%             'color',col(k,:),'linewidth',line_linewidth);
+%         hold on;    
+%     end
+%     % Experimental data
+%     idx_jref = strcmp(Pref.(subject).colheaders,joints_ref{i+1});
+%     meanPlusSTD = Pref.(subject).mean(:,idx_jref) + ...
+%         2*Pref.(subject).std(:,idx_jref);
+%     meanMinusSTD = Pref.(subject).mean(:,idx_jref) - ...
+%         2*Pref.(subject).std(:,idx_jref);          
+%     stepQ = (size(Qdots_opt_2D(k).m,1)-1)/(size(meanPlusSTD,1)-1);
+%     intervalQ = 1:stepQ:size(Qdots_opt_2D(k).m,1);
+%     sampleQ = 1:size(Qdots_opt_2D(k).m,1);
+%     meanPlusSTD = interp1(intervalQ,meanPlusSTD,sampleQ);
+%     meanMinusSTD = interp1(intervalQ,meanMinusSTD,sampleQ);
+%     hold on
+%     fill([x fliplr(x)],[meanPlusSTD fliplr(meanMinusSTD)],'k');
+%     alpha(.25);
+%     % Title
+%     set(gca,'Fontsize',label_fontsize);   
+%     title(joints_tit{idx_Qs(i+1)},'Fontsize',label_fontsize);
+%     % Y-axis
+%     if i == 1 || i == 3
+%         ylabel('Power (W)','Fontsize',label_fontsize);
+%     end
+%     % X-axis    
+%     L = get(gca,'XLim');
+%     NumTicks = 2;
+%     if i > 2 
+%         set(gca,'XTick',linspace(L(1),L(2),NumTicks))
+%         xlabel('Gait cycle (%)','Fontsize',label_fontsize);
+%     else
+%         set(gca,'XTick',[]);
+%     end
+% end 
+% l = legend(p,legend_case);
+% set(l,'Fontsize',16)
+% if versionD > 9.4
+%     sp = sgtitle('Joint powers');
+% else
+%     sp = suptitle('Joint powers');
+% end
+% set(sp,'Fontsize',sup_fontsize);
 
 %% Plot muscle activations (right)
 EMGref = ExperimentalData.EMG;

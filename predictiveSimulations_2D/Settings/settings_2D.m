@@ -28,8 +28,8 @@
 settings = [
     % A. Impact of the derivative supplier
     % Recorder - Approximated Hessian - mumps
-    1, 1, 1, 0, 2, 50; % 1
-    1, 1, 1, 0, 2, 100; % 2
-    1, 1, 1, 0, 2, 150; % 3
-    1, 1, 1, 0, 2, 200; % 3
+    1, 1, 1, 0, 2, 25; % 1
+    1, 1, 1, 0, 2, 50; % 2
+    1, 1, 1, 0, 2, 100; % 3    
+    1, 1, 1, 0, 2, 200; % 4
     ];

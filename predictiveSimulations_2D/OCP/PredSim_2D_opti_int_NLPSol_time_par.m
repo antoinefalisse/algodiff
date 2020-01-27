@@ -39,7 +39,7 @@ num_set = [1,1,1,1,0,1]; % This configuration solves the problem
 % less efficient). Therefore, the ADOL-C cases cannot be run (cases 4-6).
 % Further, we are not allowed to share the HSL libraries. Therefore, only the
 % cases with the mumps linear solver can be run (cases 1-3, 7-9, and 31-32).
-idx_ww = 1; % Index row in matrix settings
+idx_ww = 2; % Index row in matrix settings
 
 %% Settings
 import casadi.*
@@ -553,7 +553,7 @@ if solveProblem
     ineq_constr2 = vertcat(ineq_constr2{:});
     f_coll = Function('f_coll',{tfk,ak,aj,FTtildek,FTtildej,Xk,Xj,a_bk,a_bj,...
         vAk,e_bk,dFTtildej,Aj},{eq_constr,ineq_constr1, ineq_constr2, J});
-    f_coll_map = f_coll.map(N,'openmp');
+    f_coll_map = f_coll.map(N,'thread',8);
     [coll_eq_constr, coll_ineq_constr1, coll_ineq_constr2, Jall] = ...
         f_coll_map(tf, a(:,1:end-1), a_col, FTtilde(:,1:end-1), FTtilde_col, ...
         X(:,1:end-1), X_col, a_b(:,1:end-1), a_b_col, vA, e_b, dFTtilde_col, ...

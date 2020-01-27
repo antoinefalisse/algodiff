@@ -39,7 +39,7 @@ num_set = [1,1,1,1,0,1]; % This configuration solves the problem
 % less efficient). Therefore, the ADOL-C cases cannot be run (cases 4-6).
 % Further, we are not allowed to share the HSL libraries. Therefore, only the
 % cases with the mumps linear solver can be run (cases 1-3, 7-9, and 31-32).
-idx_ww = 1; % Index row in matrix settings
+idx_ww = 1:3; % Index row in matrix settings
 
 %% Settings
 import casadi.*
