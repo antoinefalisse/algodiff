@@ -27,8 +27,8 @@ close all;
 % num_set(5): set to 1 to visualize guess-bounds 
 % num_set(6): set to 1 to write .mot file
 
-% num_set = [1,1,0,1,0,1]; % This configuration solves the problem
-num_set = [0,1,1,1,0,1]; % This configuration analyzes the results
+num_set = [1,1,0,1,0,1]; % This configuration solves the problem
+% num_set = [0,1,1,1,0,1]; % This configuration analyzes the results
 
 % The variable settings in the following section (loaded through
 % settings_PredSim_2D) will set some parameters of the optimal control problems.
@@ -39,7 +39,7 @@ num_set = [0,1,1,1,0,1]; % This configuration analyzes the results
 % less efficient). Therefore, the ADOL-C cases cannot be run (cases 4-6).
 % Further, we are not allowed to share the HSL libraries. Therefore, only the
 % cases with the mumps linear solver can be run (cases 1-3, 7-9, and 31-32).
-idx_ww = 4; % Index row in matrix settings
+idx_ww = 2; % Index row in matrix settings
 
 %% Settings
 import casadi.*
